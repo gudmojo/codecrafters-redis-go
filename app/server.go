@@ -28,16 +28,18 @@ func main() {
 func handleConnection(conn net.Conn) {
     defer conn.Close()
 
-    // Read incoming data
-    buf := make([]byte, 1024)
-    _, err := conn.Read(buf)
-    if err != nil {
-        fmt.Println(err)
-        return
-    }
+	for {
+		// Read incoming data
+		buf := make([]byte, 1024)
+		_, err := conn.Read(buf)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 
-    // Print the incoming data
-    fmt.Printf("Received: %s", buf)
+		// Print the incoming data
+		fmt.Printf("Received: %s", buf)
 
-	conn.Write([]byte("+PONG\r\n"))
+		conn.Write([]byte("+PONG\r\n"))
+	}
 }
