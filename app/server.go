@@ -177,7 +177,7 @@ func get(key string) Value {
 		log.Printf("x")
 		return Value{typ: "bstring", str: ""}
 	}
-	if value.exp.IsZero() && value.exp.Before(time.Now()) {
+	if !value.exp.IsZero() && value.exp.Before(time.Now()) {
 		log.Printf("y")
 		delete(globalMap, key)
 		return Value{typ: "bstring", str: ""}
