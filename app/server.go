@@ -40,15 +40,18 @@ func handleConnection(conn net.Conn) {
 			fmt.Println(err)
 			return
 		}
+		var res Value
+		// res := Value{typ: "error", str: "Error parsing command"}
 		// Skip the first token
 		// Skip the \r\n and $
 		// Skip the \r\n
 		cmd, err := parse(buf)
 		if err != nil {
 			fmt.Println(err)
-			return
+			res = Value{typ: "error", str: "Error parsing command"}
+		} else {
+			res = handleCommand(cmd)
 		}
-		res := handleCommand(cmd)
 		serialzed := serialize(res)
 		conn.Write([]byte(serialzed))
 	}
@@ -100,16 +103,15 @@ func handleCommand(cmd []Value) Value {
 
 func ReadNumber(s []byte, i int) (int, int, error) {
 	j := i
-	fmt.Println(rune(s[j]))
-	for ; unicode.IsDigit(rune(s[j])); j++ {
-		
+	for ; j < len(s) && unicode.IsDigit(rune(s[j])); {
+		j++
 	}
 	x, err := strconv.ParseInt(string(s[i:j]), 10, 64)
 	if err != nil {
-		fmt.Println("Error parsing number:", err)
+		log.Println("Error parsing number:", err)
 		return 0, 0, err
 	}
-	return j, int(x), err
+	return j, int(x), nil
 }
 
 func ping() Value {

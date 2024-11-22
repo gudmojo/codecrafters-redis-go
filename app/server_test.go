@@ -43,6 +43,30 @@ func TestParse(t *testing.T) {
 		}
 	}
 }
+func TestReadNumber(t *testing.T) {
+	tests := []struct {
+		input    []byte
+		start    int
+		expected int
+		err      bool
+	}{
+		{[]byte("12345"), 0, 12345, false},
+		{[]byte("6789"), 0, 6789, false},
+		{[]byte("abc"), 0, 0, true},
+		{[]byte("123abc"), 0, 123, false},
+		{[]byte(""), 0, 0, true},
+	}
+
+	for _, test := range tests {
+		_, output, err := ReadNumber(test.input, test.start)
+		if (err != nil) != test.err {
+			t.Errorf("ReadNumber(%v, %d) error = %v; want err = %v", test.input, test.start, err, test.err)
+		}
+		if output != test.expected {
+			t.Errorf("ReadNumber(%v, %d) = %d; want %d", test.input, test.start, output, test.expected)
+		}
+	}
+}
 
 func equal(a, b []Value) bool {
 	if len(a) != len(b) {
