@@ -2,8 +2,12 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"os"
+	"strconv"
+	"strings"
+	"unicode"
 )
 
 func main() {
@@ -36,10 +40,87 @@ func handleConnection(conn net.Conn) {
 			fmt.Println(err)
 			return
 		}
-
-		// Print the incoming data
-		fmt.Printf("Received: %s", buf)
-
-		conn.Write([]byte("+PONG\r\n"))
+		// Skip the first token
+		// Skip the \r\n and $
+		// Skip the \r\n
+		cmd, err := parse(buf)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		res := handleCommand(cmd)
+		serialzed := serialize(res)
+		conn.Write([]byte(serialzed))
 	}
+}
+
+func parse(buf []byte) ([]Value, error) {
+	i := 1
+	i, jmax, err := ReadNumber(buf, i)
+	if err != nil {
+		log.Println("Error reading number of arguments")
+		return nil, err
+	}
+	cmd := make([]Value, jmax)
+	for j := 0; j < jmax; j++ {
+		i += 3
+		i, bulkLen, err := ReadNumber(buf, i)
+		if err != nil {
+			log.Println("Error reading bulk length")
+			return nil, err
+		}
+		i += 2
+		value := string(buf[i : i+bulkLen])
+		cmd[j] = Value{typ: "bstring", str: value}
+	}
+	return cmd, nil
+}
+
+func serialize(v Value) string {
+	switch v.typ {
+	case "bstring":
+		return fmt.Sprintf("$%d\n\r%s\r\n", len(v.str), v.str)
+	case "string":
+		return fmt.Sprintf("+%s\r\n", v.str)
+	case "error":
+		return fmt.Sprintf("-%s\r\n", v.str)
+	}
+	return ""
+}
+
+func handleCommand(cmd []Value) Value {
+	switch strings.ToUpper(cmd[0].str) {
+	case "PING":
+		return ping()
+	case "ECHO":
+		return echo(cmd[1].str)
+	}
+	return Value{typ: "error", str: "Unknown command"}
+}
+
+func ReadNumber(s []byte, i int) (int, int, error) {
+	j := i
+	fmt.Println(rune(s[j]))
+	for ; unicode.IsDigit(rune(s[j])); j++ {
+		
+	}
+	x, err := strconv.ParseInt(string(s[i:j]), 10, 64)
+	if err != nil {
+		fmt.Println("Error parsing number:", err)
+		return 0, 0, err
+	}
+	return j, int(x), err
+}
+
+func ping() Value {
+	return Value{typ: "string", str: "PONG"}
+}
+
+func echo(arg string) Value {
+	return Value{typ: "string", str: arg}
+}
+
+type Value struct {
+	typ string
+	str string
 }
