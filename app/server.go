@@ -10,6 +10,8 @@ import (
 	"unicode"
 )
 
+var globalMap = make(map[string]string)
+
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
@@ -112,6 +114,10 @@ func handleCommand(cmd []Value) Value {
 		return ping()
 	case "ECHO":
 		return echo(cmd[1].str)
+	case "SET":
+		return set(cmd[1].str, cmd[2].str)
+	case "GET":
+		return get(cmd[1].str)
 	}
 	return Value{typ: "error", str: "Unknown command"}
 }
@@ -136,6 +142,19 @@ func ping() Value {
 
 func echo(arg string) Value {
 	return Value{typ: "string", str: arg}
+}
+
+func set(key, value string) Value {
+	globalMap[key] = value
+	return Value{typ: "string", str: "OK"}
+}
+
+func get(key string) Value {
+	value, ok := globalMap[key]
+	if !ok {
+		return Value{typ: "string", str: ""}
+	}
+	return Value{typ: "string", str: value}
 }
 
 type Value struct {
