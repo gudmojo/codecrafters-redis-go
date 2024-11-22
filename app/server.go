@@ -103,7 +103,7 @@ func serialize(v Value) string {
 		if v.str == "" {
 			return "$-1\r\n"
 		}
-		return fmt.Sprintf("$%d\n\r%s\r\n", len(v.str), v.str)
+		return fmt.Sprintf("$%d\r\n%s\r\n", len(v.str), v.str)
 	case "string":
 		return fmt.Sprintf("+%s\r\n", v.str)
 	case "error":

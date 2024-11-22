@@ -9,7 +9,7 @@ func TestSerialize(t *testing.T) {
 		input    Value
 		expected string
 	}{
-		{Value{typ: "bstring", str: "hello"}, "$5\n\rhello\r\n"},
+		{Value{typ: "bstring", str: "hello"}, "$5\r\nhello\r\n"},
 		{Value{typ: "string", str: "OK"}, "+OK\r\n"},
 		{Value{typ: "error", str: "ERR unknown command"}, "-ERR unknown command\r\n"},
 	}
