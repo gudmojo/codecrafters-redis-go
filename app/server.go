@@ -148,17 +148,24 @@ func set(args []Value) Value {
 		return Value{typ: "error", str: "SET requires at least 2 arguments"}
 	}
 	if len(args) == 2 {
-		globalMap[args[0].str] = MapValue{value: args[1].str}
+		key := args[0].str
+		value := args[1].str
+		globalMap[key] = MapValue{value: value}
+		log.Printf("SET key: %s, value: %s", key, value)
 		return Value{typ: "string", str: "OK"}
 	}
 	if len(args) == 4 {
+		key := args[0].str
+		value := args[1].str
+		exp := args[3].str
 		currentTime := time.Now() 
-		ms, ok := strconv.ParseInt(args[3].str, 10, 64)
+		ms, ok := strconv.ParseInt(exp, 10, 64)
 		if ok != nil {
 			return Value{typ: "error", str: "Error parsing milliseconds"}
 		}
 		futureTime := currentTime.Add(time.Duration(ms) * time.Millisecond)
-		globalMap[args[0].str] = MapValue{value: args[1].str, exp: futureTime}
+		globalMap[key] = MapValue{value: value, exp: futureTime}
+		log.Printf("SET key: %s, value: %s, exp: %s", key, value, futureTime)
 		return Value{typ: "string", str: "OK"}
 	}
 	return Value{typ: "error", str: "SET requires 2 or 4 arguments"}
