@@ -8,9 +8,10 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+	"time"
 )
 
-var globalMap = make(map[string]string)
+var globalMap = make(map[string]MapValue)
 
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -99,6 +100,9 @@ func parse(buf []byte) ([]Value, error) {
 func serialize(v Value) string {
 	switch v.typ {
 	case "bstring":
+		if v.str == "" {
+			return "$-1\r\n"
+		}
 		return fmt.Sprintf("$%d\n\r%s\r\n", len(v.str), v.str)
 	case "string":
 		return fmt.Sprintf("+%s\r\n", v.str)
@@ -115,7 +119,7 @@ func handleCommand(cmd []Value) Value {
 	case "ECHO":
 		return echo(cmd[1].str)
 	case "SET":
-		return set(cmd[1].str, cmd[2].str)
+		return set(cmd[1:])
 	case "GET":
 		return get(cmd[1].str)
 	}
@@ -144,17 +148,42 @@ func echo(arg string) Value {
 	return Value{typ: "string", str: arg}
 }
 
-func set(key, value string) Value {
-	globalMap[key] = value
-	return Value{typ: "string", str: "OK"}
+type MapValue struct {
+	value string
+	exp time.Time
+}
+
+func set(args []Value) Value {
+	if len(args) < 2 {
+		return Value{typ: "error", str: "SET requires at least 2 arguments"}
+	}
+	if len(args) == 2 {
+		globalMap[args[0].str] = MapValue{value: args[1].str}
+		return Value{typ: "string", str: "OK"}
+	}
+	if len(args) == 4 {
+		currentTime := time.Now() 
+		ms, ok := strconv.ParseInt(args[3].str, 10, 64)
+		if ok != nil {
+			return Value{typ: "error", str: "Error parsing milliseconds"}
+		}
+		futureTime := currentTime.Add(time.Duration(ms) * time.Millisecond)
+		globalMap[args[0].str] = MapValue{value: args[1].str, exp: futureTime}
+		return Value{typ: "string", str: "OK"}
+	}
+	return Value{typ: "error", str: "SET requires 2 or 4 arguments"}
 }
 
 func get(key string) Value {
 	value, ok := globalMap[key]
 	if !ok {
-		return Value{typ: "string", str: ""}
+		return Value{typ: "bstring", str: ""}
 	}
-	return Value{typ: "string", str: value}
+	if value.exp.Before(time.Now()) {
+		delete(globalMap, key)
+		return Value{typ: "bstring", str: ""}
+	}
+	return Value{typ: "bstring", str: value.value}
 }
 
 type Value struct {
