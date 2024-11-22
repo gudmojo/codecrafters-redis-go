@@ -174,12 +174,15 @@ func set(args []Value) Value {
 func get(key string) Value {
 	value, ok := globalMap[key]
 	if !ok {
+		log.Printf("x")
 		return Value{typ: "bstring", str: ""}
 	}
 	if value.exp.Before(time.Now()) {
+		log.Printf("y")
 		delete(globalMap, key)
 		return Value{typ: "bstring", str: ""}
 	}
+	log.Printf("z")
 	return Value{typ: "bstring", str: value.value}
 }
 
