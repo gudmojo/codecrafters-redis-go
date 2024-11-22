@@ -61,12 +61,8 @@ func handleConnection(conn net.Conn) {
 }
 
 func parse(buf []byte) ([]Value, error) {
-	log.Println("parse")
 	i := 1 // Skip *
-	log.Printf("i=%d", i)
 	i, c, err := ReadNumber(buf, i)
-	log.Printf("i=%d", i)
-	log.Println("ii", i)
 	if err != nil {
 		log.Println("Error reading number of arguments")
 		return nil, err
@@ -75,24 +71,19 @@ func parse(buf []byte) ([]Value, error) {
 	cmd := make([]Value, c)
 	for j := 0; j < c; j++ {
 		i += 3 // Skip \r\n$
-		log.Printf("1 i=%d", i)
 		var bulkLen int
 		i, bulkLen, err = ReadNumber(buf, i)
-		log.Printf("2 i=%d", i)
 		//log.Println("bulkLen", bulkLen)
 		if err != nil {
-			log.Println("Y")
 			log.Println("Error reading bulk length")
 			return nil, err
 		}
 		i += 2 // Skip \r\n
-		log.Printf("3 i=%d", i)
 		value := string(buf[i : i+bulkLen])
 		//log.Println("value", value)
 		cmd[j] = Value{typ: "bstring", str: value}
 		//log.Println("x")
 		i += bulkLen
-		log.Printf("4 i=%d", i)
 	}
 	return cmd, nil
 }
@@ -127,7 +118,6 @@ func handleCommand(cmd []Value) Value {
 }
 
 func ReadNumber(s []byte, i int) (int, int, error) {
-	log.Printf("ReadNumber %d", i)
 	j := i
 	for ; j < len(s) && unicode.IsDigit(rune(s[j])); {
 		j++
