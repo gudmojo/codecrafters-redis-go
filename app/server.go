@@ -275,7 +275,7 @@ func validateStreamKey(id StreamId, lastId StreamId) error {
 		return fmt.Errorf("ERR The ID specified in XADD is equal or smaller than the target stream top item")
 	}
 	if id.id0 == lastId.id0 && id.id1 <= lastId.id1 {
-		return fmt.Errorf("ERR The ID specified in XADD is equal or smaller than the target stream top item")
+		return fmt.Errorf("ERR The ID specified in XADD must be greater than %d-%d", lastId.id0, lastId.id1)
 	}
 	return nil
 }
