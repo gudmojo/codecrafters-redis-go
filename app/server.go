@@ -242,30 +242,30 @@ func xadd(args []Value) Value {
 }
 
 func validateStreamKey(key string, id string) bool {
-	lastId0 := globalMap[key].lastStreamId0
+	v := globalMap[key]
+	lastId0 := v.lastStreamId0
+	lastId1 := v.lastStreamId1
 	idSplit := strings.Split(id, "-")
 	id0, err := strconv.ParseInt(idSplit[0], 10, 64)
 	if err != nil {
-		log.Println("1", err)
+		log.Printf("11")
+		return false
+	}
+	id1, err := strconv.ParseInt(idSplit[1], 10, 64)
+	if err != nil {
+		log.Printf("14")
 		return false
 	}
 	if int(id0) < lastId0 {
 		log.Printf("12")
 		return false
 	}
-	if int(id0) > lastId0 {
+	if int(id0) == lastId0 {
 		log.Printf("13")
-		return true
-	}
-	lastId1 := globalMap[key].lastStreamId1
-	id1, err := strconv.ParseInt(idSplit[1], 10, 64)
-	if err != nil {
-		log.Printf("14")
-		return false
-	}
-	if int(id1) < lastId1 {
-		log.Printf("15")
-		return false
+		if int(id1) <= lastId1 {
+			log.Printf("15")
+			return false
+		}
 	}
 	return true
 }
