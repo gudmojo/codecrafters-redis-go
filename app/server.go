@@ -11,6 +11,18 @@ import (
 	"time"
 )
 
+type MapValue struct {
+	typ string
+	exp time.Time
+	str string
+	stream []StreamValue
+}
+
+type StreamValue struct {
+	key string
+	mapi map[string]string
+}
+
 var globalMap = make(map[string]MapValue)
 
 func main() {
@@ -115,6 +127,8 @@ func handleCommand(cmd []Value) Value {
 		return get(cmd[1].str)
 	case "TYPE":
 		return type0(cmd[1].str)
+	case "XADD":
+		return xadd(cmd[1:])
 	}
 	return Value{typ: "error", str: "Unknown command"}
 }
@@ -140,11 +154,6 @@ func echo(arg string) Value {
 	return Value{typ: "string", str: arg}
 }
 
-type MapValue struct {
-	value string
-	exp time.Time
-}
-
 func set(args []Value) Value {
 	if len(args) < 2 {
 		return Value{typ: "error", str: "SET requires at least 2 arguments"}
@@ -152,7 +161,7 @@ func set(args []Value) Value {
 	if len(args) == 2 {
 		key := args[0].str
 		value := args[1].str
-		globalMap[key] = MapValue{value: value}
+		globalMap[key] = MapValue{typ: "string", str: value}
 		log.Printf("SET key: %s, value: %s", key, value)
 		return Value{typ: "string", str: "OK"}
 	}
@@ -166,7 +175,7 @@ func set(args []Value) Value {
 			return Value{typ: "error", str: "Error parsing milliseconds"}
 		}
 		futureTime := currentTime.Add(time.Duration(ms) * time.Millisecond)
-		globalMap[key] = MapValue{value: value, exp: futureTime}
+		globalMap[key] = MapValue{typ: "string", str: value, exp: futureTime}
 		log.Printf("SET key: %s, value: %s, exp: %s", key, value, futureTime)
 		return Value{typ: "string", str: "OK"}
 	}
@@ -182,7 +191,7 @@ func get(key string) Value {
 		delete(globalMap, key)
 		return Value{typ: "bstring", str: ""}
 	}
-	return Value{typ: "bstring", str: value.value}
+	return Value{typ: "bstring", str: value.str}
 }
 
 func type0(key string) Value {
@@ -201,3 +210,25 @@ type Value struct {
 	typ string
 	str string
 }
+
+func xadd(args []Value) Value {
+	if len(args) < 2 {
+		return Value{typ: "error", str: "XADD requires at least 2 arguments"}
+	}
+	streamKey := args[0].str
+	id := args[1].str
+	if len(args) % 2 != 0 {
+		return Value{typ: "error", str: "XADD requires an even number of arguments"}
+	}
+	stream, found := globalMap[streamKey]
+	if !found {
+		stream = MapValue{typ: "stream", stream: []StreamValue{}}
+	}
+	mapi := make(map[string]string)
+	for i := 2; i < len(args); i += 2 {
+		mapi[args[i].str] = args[i+1].str
+	}
+	stream.stream = append(stream.stream, StreamValue{key: id, mapi: mapi})
+	return Value{typ: "bstring", str: id}
+}
+
