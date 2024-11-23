@@ -203,7 +203,7 @@ func type0(key string) Value {
 		delete(globalMap, key)
 		return Value{typ: "string", str: "none"}
 	}
-	return Value{typ: "string", str: "string"}
+	return Value{typ: "string", str: value.typ}
 }
 
 type Value struct {
