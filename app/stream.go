@@ -192,39 +192,63 @@ func xread(args []Value) Value {
 	if args[streamsPos].str != "streams" {
 		return Value{typ: "error", str: "Expected streams keyword"}
 	}
-	streamCount := (len(args) - 1 - streamsPos) / 2
-	c, ress := doXread(streamCount, args)
+	streamKeys, seens := parseXreadStreamKeys(args, streamsPos)
+	c, ress := doXread(streamKeys, seens)
 	if block < 0 {
 		return ress
 	}
 	if c > 0 {
 		return ress
 	}
+	log.Println("Make channel")
 	ch := make(chan int)
-	for i := 0; i < streamCount; i++ {
-		streamKey := args[i+1].str
+	for _, streamKey := range(streamKeys) {
+	log.Println("Make channel 2")
+		log.Printf("Make channel %s", streamKey)
 		stream, found := globalMap[streamKey]
 		if !found {
+			log.Println("Make channel3")
 			continue
 		}
+		log.Println("Appending channel")
 		stream.chans = append(stream.chans, ch)
 	}
 	select {
 	case <-ch:
-		_, z := doXread(streamCount, args)
-		for i := 0; i < streamCount; i++ {
-			streamKey := args[i+1].str
+		log.Println("Channel received")
+		_, z := doXread(streamKeys, seens)
+		for _, streamKey := range(streamKeys) {
+			log.Println("Channel received 1")
 			stream, found := globalMap[streamKey]
 			if !found {
+				log.Println("Channel received 2")
 				continue
 			}
+			log.Println("Channel received 3")
 			stream.chans = remove(stream.chans, ch)
 		}
+		log.Println("Channel received 4")
 		close(ch)
+		log.Println("Channel received 5")
+		log.Printf("Channel received %v", serialize(z))
 		return z
-	case <-time.After(time.Duration(block) * time.Millisecond): 
-		return ress
+	case <-time.After(time.Duration(block) * time.Millisecond):
+		log.Println("Timeout")
+		return Value{typ: "bstring", str: ""}
 	}
+}
+
+func parseXreadStreamKeys(args []Value, streamsPos int) ([]string, []string) {
+	streamCount := (len(args) - 1 - streamsPos) / 2
+	streamKeys := make([]string, streamCount)
+	seens := make([]string, streamCount)
+	streamKeysPos := streamsPos + 1
+	seensPos := streamKeysPos + streamCount
+	for i := 0; i < streamCount; i++ {
+		streamKeys[i] = args[streamKeysPos+i].str
+		seens[i] = args[seensPos + i].str
+	}
+	return streamKeys, seens
 }
 
 func remove(s []chan int, c chan int) []chan int {
@@ -236,24 +260,21 @@ func remove(s []chan int, c chan int) []chan int {
 	return s
 }
 
-func doXread(streamCount int, args []Value) (int, Value) {
+func doXread(streamKeys []string, seens []string) (int, Value) {
 	c := 0
 	ress := Value{
 		typ: "array",
 		arr: []Value{},
 	}
-	for i := 0; i < streamCount; i++ {
+	for i, streamKey := range(streamKeys) {
 		var res Value = Value{typ: "array", arr: []Value{}}
-		streamKey := args[i+1].str
-		firstStreamIdPos := streamCount + 1
-		seen := args[firstStreamIdPos+i].str
 		stream, found := globalMap[streamKey]
 		if !found {
 			return c, Value{typ: "bstring", str: ""}
 		}
-		seenId, err := parseStreamId(seen)
+		seenId, err := parseStreamId(seens[i])
 		if err != nil {
-			return c, Value{typ: "error", str: "Invalid seen id"}
+			return c, Value{typ: "error", str: "Invalid seen id: " + seens[i]}
 		}
 		for _, s := range stream.stream {
 
