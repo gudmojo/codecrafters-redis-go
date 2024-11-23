@@ -116,6 +116,9 @@ func xrange(args []Value) Value {
 	if !found {
 		return Value{typ: "bstring", str: ""}
 	}
+	if start == "-" {
+		start = "0-0"
+	}
 	startId, err := parseStreamId(start)
 	if err != nil {
 		return Value{typ: "error", str: "Invalid start id"}
