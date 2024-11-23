@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"log"
 )
 
 type StreamValue struct {
