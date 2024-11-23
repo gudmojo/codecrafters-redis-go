@@ -113,6 +113,8 @@ func handleCommand(cmd []Value) Value {
 		return set(cmd[1:])
 	case "GET":
 		return get(cmd[1].str)
+	case "TYPE":
+		return type0(cmd[1].str)
 	}
 	return Value{typ: "error", str: "Unknown command"}
 }
@@ -174,16 +176,25 @@ func set(args []Value) Value {
 func get(key string) Value {
 	value, ok := globalMap[key]
 	if !ok {
-		log.Printf("x")
 		return Value{typ: "bstring", str: ""}
 	}
 	if !value.exp.IsZero() && value.exp.Before(time.Now()) {
-		log.Printf("y")
 		delete(globalMap, key)
 		return Value{typ: "bstring", str: ""}
 	}
-	log.Printf("z")
 	return Value{typ: "bstring", str: value.value}
+}
+
+func type0(key string) Value {
+	value, ok := globalMap[key]
+	if !ok {
+		return Value{typ: "string", str: "none"}
+	}
+	if !value.exp.IsZero() && value.exp.Before(time.Now()) {
+		delete(globalMap, key)
+		return Value{typ: "string", str: "none"}
+	}
+	return Value{typ: "string", str: "string"}
 }
 
 type Value struct {
