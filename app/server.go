@@ -228,8 +228,9 @@ func xadd(args []Value) Value {
 		globalMap[streamKey] = stream
 	}
 	log.Printf("Validating stream key %s %s", streamKey, id)
-	if !validateStreamKey(streamKey, id) {
-		log.Println("Validating stream key failed")
+	err := validateStreamKey(streamKey, id)
+	if err != nil {
+		log.Printf("Validating stream key failed: %e", err)
 		return Value{typ: "error", str: "Invalid stream key"}
 	}
 	
@@ -241,31 +242,24 @@ func xadd(args []Value) Value {
 	return Value{typ: "bstring", str: id}
 }
 
-func validateStreamKey(key string, id string) bool {
+func validateStreamKey(key string, id string) error {
 	v := globalMap[key]
 	lastId0 := v.lastStreamId0
 	lastId1 := v.lastStreamId1
 	idSplit := strings.Split(id, "-")
 	id0, err := strconv.ParseInt(idSplit[0], 10, 64)
 	if err != nil {
-		log.Printf("11")
-		return false
+		return fmt.Errorf("error parsing id0: %w", err)
 	}
 	id1, err := strconv.ParseInt(idSplit[1], 10, 64)
 	if err != nil {
-		log.Printf("14")
-		return false
+		return fmt.Errorf("error parsing id1: %w", err)
 	}
 	if int(id0) < lastId0 {
-		log.Printf("12")
-		return false
+		return fmt.Errorf("id0 was less than lastId0")
 	}
-	if int(id0) == lastId0 {
-		log.Printf("13")
-		if int(id1) <= lastId1 {
-			log.Printf("15")
-			return false
-		}
+	if int(id0) == lastId0 && int(id1) <= lastId1 {
+		return fmt.Errorf("id1 must be greater than lastId1 if id0 == lastId0")
 	}
-	return true
+	return nil
 }

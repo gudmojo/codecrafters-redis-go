@@ -2,6 +2,7 @@ package main
 
 import (
 	"testing"
+	"log"
 )
 
 func TestSerialize(t *testing.T) {
@@ -74,52 +75,72 @@ func TestReadNumber(t *testing.T) {
 func TestValidateStreamKey(t *testing.T) {
 	tests := []struct {
 		id      string
-		expected bool
+		expected string
 		setup    func()
 	}{
 		{
 			id:      "1-0",
-			expected: true,
+			expected: "",
 			setup: func() {
 				globalMap["stream"] = &MapValue{lastStreamId0: 0, lastStreamId1: 0}
 			},
 		},
 		{
 			id:      "0-1",
-			expected: false,
+			expected: "id0 was less than lastId0",
 			setup: func() {
 				globalMap["stream"] = &MapValue{lastStreamId0: 1, lastStreamId1: 0}
 			},
 		},
 		{
 			id:      "1-1",
-			expected: true,
+			expected: "",
 			setup: func() {
 				globalMap["stream"] = &MapValue{lastStreamId0: 1, lastStreamId1: 0}
 			},
 		},
 		{
 			id:      "1-0",
-			expected: false,
+			expected: "id1 must be greater than lastId1 if id0 == lastId0",
+			setup: func() {
+				globalMap["stream"] = &MapValue{lastStreamId0: 1, lastStreamId1: 1}
+			},
+		},
+		{
+			id:      "1-1",
+			expected: "id1 must be greater than lastId1 if id0 == lastId0",
 			setup: func() {
 				globalMap["stream"] = &MapValue{lastStreamId0: 1, lastStreamId1: 1}
 			},
 		},
 		{
 			id:      "invalid-key",
-			expected: false,
+			expected: "error parsing id0: strconv.ParseInt: parsing \"invalid\": invalid syntax",
 			setup:    func() {},
 		},
 	}
 
-	for _, test := range tests {
+	for i, test := range tests {
+		log.Printf("i=%d", i)
 		test.setup()
-		output := validateStreamKey("stream", test.id)
-		if output != test.expected {
-			t.Errorf("validateStreamKey(%v) = %v; want %v", test.id, output, test.expected)
+		err := validateStreamKey("stream", test.id)
+		log.Printf("err=%v", err)
+		expect := test.expected
+		if expect == "" {
+			if err != nil {
+				t.Errorf("validateStreamKey(%v) a = %v; want %v", test.id, err, test.expected)
+			}
+		} else {
+			if err == nil {
+				t.Fatalf("Expected error, got nil")
+			}
+			if err.Error() != test.expected {
+				t.Errorf("validateStreamKey(%v) b = %v; want %v", test.id, err, test.expected)
+			}
 		}
 	}
 }
+
 func equal(a, b []Value) bool {
 	if len(a) != len(b) {
 		return false
