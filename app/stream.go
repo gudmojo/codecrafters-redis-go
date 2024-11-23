@@ -45,7 +45,11 @@ func xadd(args []Value) Value {
 	}
 	id := idPre.StreamId
 	if idPre.typ == 1 {
+		if stream.lastId.id0 == idPre.id0 {
 		id.id1 = stream.lastId.id1 + 1
+		} else {
+			id.id1 = 0
+		}
 	}
 	err = validateStreamKey(id, stream.lastId)
 	if err != nil {
