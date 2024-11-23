@@ -167,46 +167,50 @@ func greaterThan(p1, p2 StreamId) bool {
 }
 
 func xread(args []Value) Value {
-	var err error
-	var res Value = Value{typ: "array", arr: []Value{}}
+	ress := Value {
+		typ: "array", 
+		arr: []Value {},
+	}
+
 	if len(args) < 3 {
-		return Value{typ: "error", str: "XREAD requires 2 arguments"}
+		return Value{typ: "error", str: "XREAD requires at least 3 arguments"}
 	}
 	if args[0].str != "streams" {
 		return Value{typ: "error", str: "Expected streams keyword"}
 	}
-	streamKey := args[1].str
-	seen := args[2].str
-	stream, found := globalMap[streamKey]
-	if !found {
-		return Value{typ: "bstring", str: ""}
-	}
-	seenId, err := parseStreamId(seen)
-	if err != nil {
-		return Value{typ: "error", str: "Invalid seen id"}
-	}
-	for _, s := range stream.stream {
-		// If s > seen
-		if greaterThan(s.id, seenId.StreamId) {
-			d := Value{typ: "array", arr: []Value{}}
-			for k, v := range s.map0 {
-				d.arr = append(d.arr, Value{typ: "bstring", str: k})
-				d.arr = append(d.arr, Value{typ: "bstring", str: v})
-			}
-			kk := Value{typ: "array", arr: []Value{{typ: "bstring", str: s.id.String()}, d}}
-			res.arr = append(res.arr, kk)
+	streamCount := (len(args) - 1) / 2
+	for i := 0; i < streamCount; i++ {
+		var res Value = Value{typ: "array", arr: []Value{}}
+		streamKey := args[i+1].str // First is 1, second is 2
+		firstStreamIdPos := streamCount + 1
+		seen := args[firstStreamIdPos+i].str
+		stream, found := globalMap[streamKey]
+		if !found {
+			return Value{typ: "bstring", str: ""}
 		}
-	}
-	return Value {
-		typ: "array", 
-		arr: []Value {
-			Value {
-				typ: "array", 
-				arr: []Value {
-					Value{typ: "bstring", str: streamKey}, 
-					res,
-				},
+		seenId, err := parseStreamId(seen)
+		if err != nil {
+			return Value{typ: "error", str: "Invalid seen id"}
+		}
+		for _, s := range stream.stream {
+			// If s > seen
+			if greaterThan(s.id, seenId.StreamId) {
+				d := Value{typ: "array", arr: []Value{}}
+				for k, v := range s.map0 {
+					d.arr = append(d.arr, Value{typ: "bstring", str: k})
+					d.arr = append(d.arr, Value{typ: "bstring", str: v})
+				}
+				kk := Value{typ: "array", arr: []Value{{typ: "bstring", str: s.id.String()}, d}}
+				res.arr = append(res.arr, kk)
+			}
+		}
+		ress.arr = append(ress.arr, Value{
+			typ: "array", 
+			arr: []Value {
+				{typ: "bstring", str: streamKey}, 
+				res,
 			},
-		},
+		})
 	}
+	return ress
 }
