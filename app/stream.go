@@ -16,13 +16,13 @@ type StreamId struct {
     id1 int
 }
 
+func (p StreamId) String() string {
+	return fmt.Sprintf("%d-%d", p.id0, p.id1)
+}
+
 type StreamIdPre struct {
 	StreamId
 	typ int
-}
-
-func (p StreamId) String() string {
-	return fmt.Sprintf("id0: %d, id2: %d", p.id0, p.id1)
 }
 
 func xadd(args []Value) Value {
@@ -57,7 +57,7 @@ func xadd(args []Value) Value {
 	}
 	stream.stream = append(stream.stream, StreamValue{id: idStr, map0: map0})
 	stream.lastId = id
-	return Value{typ: "bstring", str: idStr}
+	return Value{typ: "bstring", str: id}
 }
 
 func parseStreamId(id string) (StreamIdPre, error) {
