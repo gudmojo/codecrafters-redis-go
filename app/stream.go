@@ -213,6 +213,10 @@ func xread(args []Value) Value {
 		log.Println("Appending channel")
 		stream.chans = append(stream.chans, ch)
 	}
+    after := time.Duration(math.MaxInt64)
+	if block > 0 {
+		after = time.Duration(block) * time.Millisecond
+	}
 	select {
 	case <-ch:
 		log.Println("Channel received")
@@ -232,7 +236,7 @@ func xread(args []Value) Value {
 		log.Println("Channel received 5")
 		log.Printf("Channel received %v", serialize(z))
 		return z
-	case <-time.After(time.Duration(block) * time.Millisecond):
+	case <-time.After(after):
 		log.Println("Timeout")
 		return Value{typ: "bstring", str: ""}
 	}
