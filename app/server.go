@@ -23,7 +23,7 @@ type StreamValue struct {
 	mapi map[string]string
 }
 
-var globalMap = make(map[string]MapValue)
+var globalMap = make(map[string]*MapValue)
 
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -161,7 +161,7 @@ func set(args []Value) Value {
 	if len(args) == 2 {
 		key := args[0].str
 		value := args[1].str
-		globalMap[key] = MapValue{typ: "string", str: value}
+		globalMap[key] = &MapValue{typ: "string", str: value}
 		log.Printf("SET key: %s, value: %s", key, value)
 		return Value{typ: "string", str: "OK"}
 	}
@@ -175,7 +175,7 @@ func set(args []Value) Value {
 			return Value{typ: "error", str: "Error parsing milliseconds"}
 		}
 		futureTime := currentTime.Add(time.Duration(ms) * time.Millisecond)
-		globalMap[key] = MapValue{typ: "string", str: value, exp: futureTime}
+		globalMap[key] = &MapValue{typ: "string", str: value, exp: futureTime}
 		log.Printf("SET key: %s, value: %s, exp: %s", key, value, futureTime)
 		return Value{typ: "string", str: "OK"}
 	}
@@ -222,8 +222,10 @@ func xadd(args []Value) Value {
 	}
 	stream, found := globalMap[streamKey]
 	if !found {
-		stream = MapValue{typ: "stream", stream: []StreamValue{}}
+		stream = &MapValue{typ: "stream", stream: []StreamValue{}}
+		globalMap[streamKey] = stream
 	}
+	
 	mapi := make(map[string]string)
 	for i := 2; i < len(args); i += 2 {
 		mapi[args[i].str] = args[i+1].str
