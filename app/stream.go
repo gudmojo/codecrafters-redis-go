@@ -57,7 +57,7 @@ func xadd(args []Value) Value {
 	}
 	stream.stream = append(stream.stream, StreamValue{id: idStr, map0: map0})
 	stream.lastId = id
-	return Value{typ: "bstring", str: id}
+	return Value{typ: "bstring", str: id.String()}
 }
 
 func parseStreamId(id string) (StreamIdPre, error) {
