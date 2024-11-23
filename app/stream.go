@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -122,6 +123,9 @@ func xrange(args []Value) Value {
 	startId, err := parseStreamId(start)
 	if err != nil {
 		return Value{typ: "error", str: "Invalid start id"}
+	}
+	if end == "+" {
+		end = fmt.Sprintf("%d-%d", math.MaxInt, math.MaxInt)
 	}
 	endId, err := parseStreamId(end)
 	if err != nil {
