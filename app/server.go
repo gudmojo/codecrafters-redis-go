@@ -16,8 +16,7 @@ type MapValue struct {
 	exp time.Time
 	str string
 	stream []StreamValue
-	lastStreamId0 int
-	lastStreamId1 int
+	lastId StreamId
 }
 
 type StreamValue struct {
@@ -140,7 +139,7 @@ func ReadNumber(s []byte, i int) (int, int, error) {
 	for ; j < len(s) && unicode.IsDigit(rune(s[j])); {
 		j++
 	}
-	x, err := strconv.ParseInt(string(s[i:j]), 10, 64)
+	x, err := strconv.Atoi(string(s[i:j]))
 	if err != nil {
 		log.Println("Error parsing number:", err)
 		return 0, 0, err
@@ -172,7 +171,7 @@ func set(args []Value) Value {
 		value := args[1].str
 		exp := args[3].str
 		currentTime := time.Now() 
-		ms, ok := strconv.ParseInt(exp, 10, 64)
+		ms, ok := strconv.Atoi(exp)
 		if ok != nil {
 			return Value{typ: "error", str: "Error parsing milliseconds"}
 		}
@@ -213,12 +212,25 @@ type Value struct {
 	str string
 }
 
+type StreamId struct {
+	id0 int
+    id1 int
+}
+
+func (p StreamId) String() string {
+	return fmt.Sprintf("id0: %d, id2: %d", p.id0, p.id1)
+}
+
 func xadd(args []Value) Value {
 	if len(args) < 2 {
 		return Value{typ: "error", str: "XADD requires at least 2 arguments"}
 	}
 	streamKey := args[0].str
-	id := args[1].str
+	idStr := args[1].str
+	id, err := parseStreamId(idStr)
+	if err != nil {
+		return Value{typ: "error", str: "Invalid stream id"}
+	}
 	if len(args) % 2 != 0 {
 		return Value{typ: "error", str: "XADD requires an even number of arguments"}
 	}
@@ -228,7 +240,7 @@ func xadd(args []Value) Value {
 		globalMap[streamKey] = stream
 	}
 	log.Printf("Validating stream key %s %s", streamKey, id)
-	err := validateStreamKey(streamKey, id)
+	err = validateStreamKey(id, stream.lastId)
 	if err != nil {
 		log.Printf("Validating stream key failed: %e", err)
 		return Value{typ: "error", str: "Invalid stream key"}
@@ -238,27 +250,32 @@ func xadd(args []Value) Value {
 	for i := 2; i < len(args); i += 2 {
 		mapi[args[i].str] = args[i+1].str
 	}
-	stream.stream = append(stream.stream, StreamValue{id: id, mapi: mapi})
-	return Value{typ: "bstring", str: id}
+	stream.stream = append(stream.stream, StreamValue{id: idStr, mapi: mapi})
+	stream.lastId = id
+	return Value{typ: "bstring", str: idStr}
 }
 
-func validateStreamKey(key string, id string) error {
-	v := globalMap[key]
-	lastId0 := v.lastStreamId0
-	lastId1 := v.lastStreamId1
+func parseStreamId(id string) (StreamId, error) {
 	idSplit := strings.Split(id, "-")
-	id0, err := strconv.ParseInt(idSplit[0], 10, 64)
-	if err != nil {
-		return fmt.Errorf("error parsing id0: %w", err)
+	if len(idSplit) != 2 {
+		return StreamId{}, fmt.Errorf("invalid id format: %s", id)
 	}
-	id1, err := strconv.ParseInt(idSplit[1], 10, 64)
+	id0, err := strconv.Atoi(idSplit[0])
 	if err != nil {
-		return fmt.Errorf("error parsing id1: %w", err)
+		return StreamId{}, fmt.Errorf("error parsing id0: %w", err)
 	}
-	if int(id0) < lastId0 {
+	id1, err := strconv.Atoi(idSplit[1])
+	if err != nil {
+		return StreamId{}, fmt.Errorf("error parsing id1: %w", err)
+	}
+	return StreamId{id0: id0, id1: id1}, nil
+}
+
+func validateStreamKey(id StreamId, lastId StreamId) error {
+	if id.id0 < lastId.id0 {
 		return fmt.Errorf("id0 was less than lastId0")
 	}
-	if int(id0) == lastId0 && int(id1) <= lastId1 {
+	if id.id0 == lastId.id0 && id.id1 <= lastId.id1 {
 		return fmt.Errorf("id1 must be greater than lastId1 if id0 == lastId0")
 	}
 	return nil

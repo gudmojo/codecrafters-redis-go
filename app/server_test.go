@@ -74,56 +74,40 @@ func TestReadNumber(t *testing.T) {
 }
 func TestValidateStreamKey(t *testing.T) {
 	tests := []struct {
-		id      string
+		id      StreamId
+		lastId    StreamId
 		expected string
-		setup    func()
 	}{
 		{
-			id:      "1-0",
+			id:      StreamId{1, 0},
+			lastId: StreamId{0, 0},
 			expected: "",
-			setup: func() {
-				globalMap["stream"] = &MapValue{lastStreamId0: 0, lastStreamId1: 0}
-			},
 		},
 		{
-			id:      "0-1",
+			id:      StreamId{0, 1},
+			lastId: StreamId{1, 0},
 			expected: "id0 was less than lastId0",
-			setup: func() {
-				globalMap["stream"] = &MapValue{lastStreamId0: 1, lastStreamId1: 0}
-			},
 		},
 		{
-			id:      "1-1",
+			id:      StreamId{1, 1},
+			lastId: StreamId{1, 0},
 			expected: "",
-			setup: func() {
-				globalMap["stream"] = &MapValue{lastStreamId0: 1, lastStreamId1: 0}
-			},
 		},
 		{
-			id:      "1-0",
+			id:      StreamId{1, 0},
+			lastId: StreamId{1, 1},
 			expected: "id1 must be greater than lastId1 if id0 == lastId0",
-			setup: func() {
-				globalMap["stream"] = &MapValue{lastStreamId0: 1, lastStreamId1: 1}
-			},
 		},
 		{
-			id:      "1-1",
+			id:      StreamId{1, 1},
+			lastId: StreamId{1, 1},
 			expected: "id1 must be greater than lastId1 if id0 == lastId0",
-			setup: func() {
-				globalMap["stream"] = &MapValue{lastStreamId0: 1, lastStreamId1: 1}
-			},
-		},
-		{
-			id:      "invalid-key",
-			expected: "error parsing id0: strconv.ParseInt: parsing \"invalid\": invalid syntax",
-			setup:    func() {},
 		},
 	}
 
 	for i, test := range tests {
 		log.Printf("i=%d", i)
-		test.setup()
-		err := validateStreamKey("stream", test.id)
+		err := validateStreamKey(test.id, test.lastId)
 		log.Printf("err=%v", err)
 		expect := test.expected
 		if expect == "" {
