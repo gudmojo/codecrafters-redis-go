@@ -242,8 +242,7 @@ func xadd(args []Value) Value {
 	log.Printf("Validating stream key %s %s", streamKey, id)
 	err = validateStreamKey(id, stream.lastId)
 	if err != nil {
-		log.Printf("Validating stream key failed: %e", err)
-		return Value{typ: "error", str: "Invalid stream key"}
+		return Value{typ: "error", str: err.Error()}
 	}
 	
 	mapi := make(map[string]string)
@@ -276,7 +275,7 @@ func validateStreamKey(id StreamId, lastId StreamId) error {
 		return fmt.Errorf("id0 was less than lastId0")
 	}
 	if id.id0 == lastId.id0 && id.id1 <= lastId.id1 {
-		return fmt.Errorf("id1 must be greater than lastId1 if id0 == lastId0")
+		return fmt.Errorf("ERR The ID specified in XADD is equal or smaller than the target stream top item")
 	}
 	return nil
 }
