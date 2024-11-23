@@ -271,16 +271,28 @@ func parseStreamId(id string) (StreamId, error) {
 }
 
 func validateStreamKey(id StreamId, lastId StreamId) error {
+	if id.id0 < 0 {
+		log.Printf("1")
+		return fmt.Errorf("ERR Invalid stream ID specified as stream top item")
+	}
+	if id.id1 < 0 {
+		log.Printf("2")
+		return fmt.Errorf("ERR Invalid stream ID specified as stream top item")
+	}
+	if id.id0 == 0 && id.id1 <= 0 {
+		log.Printf("3")
+		return fmt.Errorf("ERR Invalid stream ID specified as stream top item")
+	}
 	if id.id0 < lastId.id0 {
-		log.Printf("id0 was less than lastId0")
+		log.Printf("4")
 		return fmt.Errorf("ERR The ID specified in XADD is equal or smaller than the target stream top item")
 	}
-
 	if id.id0 == lastId.id0 && id.id1 == lastId.id1 {
-		log.Printf("id1 must be greater than lastId1 if id0 == lastId0")
+		log.Printf("5")
 		return fmt.Errorf("ERR The ID specified in XADD is equal or smaller than the target stream top item")
 	}
 	if id.id0 == lastId.id0 && id.id1 <= lastId.id1 {
+		log.Printf("6")
 		return fmt.Errorf("ERR The ID specified in XADD must be greater than %d-%d", lastId.id0, lastId.id1)
 	}
 	return nil
