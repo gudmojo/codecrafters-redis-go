@@ -170,11 +170,14 @@ func greaterThan(p1, p2 StreamId) bool {
 func xread(args []Value) Value {
 	var err error
 	var res Value = Value{typ: "array", arr: []Value{}}
-	if len(args) < 2 {
-		return Value{typ: "error", str: "XRANGE requires 2 arguments"}
+	if len(args) < 3 {
+		return Value{typ: "error", str: "XREAD requires 2 arguments"}
 	}
-	streamKey := args[0].str
-	seen := args[1].str
+	if args[0].str != "streams" {
+		return Value{typ: "error", str: "Expected streams keyword"}
+	}
+	streamKey := args[1].str
+	seen := args[2].str
 	stream, found := globalMap[streamKey]
 	if !found {
 		return Value{typ: "bstring", str: ""}
@@ -195,8 +198,16 @@ func xread(args []Value) Value {
 			res.arr = append(res.arr, kk)
 		}
 	}
-	name := Value{typ: "bstring", str: streamKey}
-	f := Value{typ: "array", arr: []Value{name, res}}
-	log.Printf("xread: %v", serialize(f))
-	return f
+	return Value {
+		typ: "array", 
+		arr: []Value {
+			Value {
+				typ: "array", 
+				arr: []Value {
+					Value{typ: "bstring", str: streamKey}, 
+					res,
+				},
+			},
+		},
+	}
 }
