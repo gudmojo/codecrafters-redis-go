@@ -16,10 +16,12 @@ type MapValue struct {
 	exp time.Time
 	str string
 	stream []StreamValue
+	lastStreamId0 int
+	lastStreamId1 int
 }
 
 type StreamValue struct {
-	key string
+	id string
 	mapi map[string]string
 }
 
@@ -217,6 +219,9 @@ func xadd(args []Value) Value {
 	}
 	streamKey := args[0].str
 	id := args[1].str
+	if !validateStreamKey(streamKey, id) {
+		return Value{typ: "error", str: "Invalid stream key"}
+	}
 	if len(args) % 2 != 0 {
 		return Value{typ: "error", str: "XADD requires an even number of arguments"}
 	}
@@ -230,7 +235,35 @@ func xadd(args []Value) Value {
 	for i := 2; i < len(args); i += 2 {
 		mapi[args[i].str] = args[i+1].str
 	}
-	stream.stream = append(stream.stream, StreamValue{key: id, mapi: mapi})
+	stream.stream = append(stream.stream, StreamValue{id: id, mapi: mapi})
 	return Value{typ: "bstring", str: id}
 }
 
+func validateStreamKey(key string, id string) bool {
+	lastId0 := globalMap[key].lastStreamId0
+	idSplit := strings.Split(id, "-")
+	id0, err := strconv.ParseInt(idSplit[0], 10, 64)
+	if err != nil {
+		log.Println("1", err)
+		return false
+	}
+	if int(id0) < lastId0 {
+		log.Printf("12")
+		return false
+	}
+	if int(id0) > lastId0 {
+		log.Printf("13")
+		return true
+	}
+	lastId1 := globalMap[key].lastStreamId1
+	id1, err := strconv.ParseInt(idSplit[1], 10, 64)
+	if err != nil {
+		log.Printf("14")
+		return false
+	}
+	if int(id1) < lastId1 {
+		log.Printf("15")
+		return false
+	}
+	return true
+}

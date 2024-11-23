@@ -71,7 +71,55 @@ func TestReadNumber(t *testing.T) {
 		}
 	}
 }
+func TestValidateStreamKey(t *testing.T) {
+	tests := []struct {
+		id      string
+		expected bool
+		setup    func()
+	}{
+		{
+			id:      "1-0",
+			expected: true,
+			setup: func() {
+				globalMap["stream"] = &MapValue{lastStreamId0: 0, lastStreamId1: 0}
+			},
+		},
+		{
+			id:      "0-1",
+			expected: false,
+			setup: func() {
+				globalMap["stream"] = &MapValue{lastStreamId0: 1, lastStreamId1: 0}
+			},
+		},
+		{
+			id:      "1-1",
+			expected: true,
+			setup: func() {
+				globalMap["stream"] = &MapValue{lastStreamId0: 1, lastStreamId1: 0}
+			},
+		},
+		{
+			id:      "1-0",
+			expected: false,
+			setup: func() {
+				globalMap["stream"] = &MapValue{lastStreamId0: 1, lastStreamId1: 1}
+			},
+		},
+		{
+			id:      "invalid-key",
+			expected: false,
+			setup:    func() {},
+		},
+	}
 
+	for _, test := range tests {
+		test.setup()
+		output := validateStreamKey("stream", test.id)
+		if output != test.expected {
+			t.Errorf("validateStreamKey(%v) = %v; want %v", test.id, output, test.expected)
+		}
+	}
+}
 func equal(a, b []Value) bool {
 	if len(a) != len(b) {
 		return false
