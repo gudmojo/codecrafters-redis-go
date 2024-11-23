@@ -227,7 +227,9 @@ func xadd(args []Value) Value {
 		stream = &MapValue{typ: "stream", stream: []StreamValue{}}
 		globalMap[streamKey] = stream
 	}
+	log.Printf("Validating stream key %s %s", streamKey, id)
 	if !validateStreamKey(streamKey, id) {
+		log.Println("Validating stream key failed")
 		return Value{typ: "error", str: "Invalid stream key"}
 	}
 	
