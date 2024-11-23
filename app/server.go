@@ -19,6 +19,7 @@ type MapValue struct {
 	str string
 	stream []StreamValue
 	lastId StreamId
+	chans []chan int
 }
 
 func main() {
@@ -52,10 +53,6 @@ func handleConnection(conn net.Conn) {
 			return
 		}
 		var res Value
-		// res := Value{typ: "error", str: "Error parsing command"}
-		// Skip the first token
-		// Skip the \r\n and $
-		// Skip the \r\n
 		cmd, err := parse(buf)
 		if err != nil {
 			fmt.Println(err)

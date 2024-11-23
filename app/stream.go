@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"strconv"
 	"strings"
@@ -38,7 +39,7 @@ func xadd(args []Value) Value {
 	streamKey := args[0].str
 	stream, found := globalMap[streamKey]
 	if !found {
-		stream = &MapValue{typ: "stream", stream: []StreamValue{}}
+		stream = &MapValue{typ: "stream", chans: []chan int{}, stream: []StreamValue{}}
 		globalMap[streamKey] = stream
 	}
 	idStr := args[1].str
@@ -69,6 +70,11 @@ func xadd(args []Value) Value {
 	}
 	stream.stream = append(stream.stream, StreamValue{id: id, map0: map0})
 	stream.lastId = id
+	for _, r := range(stream.chans) {
+		log.Printf("Sending to channel")
+		r <- 1
+		log.Printf("Sent to channel")
+	}
 	return Value{typ: "bstring", str: id.String()}
 }
 
@@ -167,33 +173,90 @@ func greaterThan(p1, p2 StreamId) bool {
 }
 
 func xread(args []Value) Value {
-	ress := Value {
-		typ: "array", 
-		arr: []Value {},
-	}
-
+	var err error
+	streamsPos := 0
+	block := -1
 	if len(args) < 3 {
 		return Value{typ: "error", str: "XREAD requires at least 3 arguments"}
 	}
-	if args[0].str != "streams" {
+	if args[0].str == "block" {
+		if len(args) < 5 {
+			return Value{typ: "error", str: "XREAD with block requires at least 5 arguments"}
+		}
+		block, err = strconv.Atoi(args[1].str)
+		if err != nil {
+			return Value{typ: "error", str: "Invalid block argument"}
+		}
+		streamsPos = 2
+	}
+	if args[streamsPos].str != "streams" {
 		return Value{typ: "error", str: "Expected streams keyword"}
 	}
-	streamCount := (len(args) - 1) / 2
+	streamCount := (len(args) - 1 - streamsPos) / 2
+	c, ress := doXread(streamCount, args)
+	if block < 0 {
+		return ress
+	}
+	if c > 0 {
+		return ress
+	}
+	ch := make(chan int)
+	for i := 0; i < streamCount; i++ {
+		streamKey := args[i+1].str
+		stream, found := globalMap[streamKey]
+		if !found {
+			continue
+		}
+		stream.chans = append(stream.chans, ch)
+	}
+	select {
+	case <-ch:
+		_, z := doXread(streamCount, args)
+		for i := 0; i < streamCount; i++ {
+			streamKey := args[i+1].str
+			stream, found := globalMap[streamKey]
+			if !found {
+				continue
+			}
+			stream.chans = remove(stream.chans, ch)
+		}
+		close(ch)
+		return z
+	case <-time.After(time.Duration(block) * time.Millisecond): 
+		return ress
+	}
+}
+
+func remove(s []chan int, c chan int) []chan int {
+	for i, v := range s {
+		if v == c {
+			return append(s[:i], s[i+1:]...)
+		}
+	}
+	return s
+}
+
+func doXread(streamCount int, args []Value) (int, Value) {
+	c := 0
+	ress := Value{
+		typ: "array",
+		arr: []Value{},
+	}
 	for i := 0; i < streamCount; i++ {
 		var res Value = Value{typ: "array", arr: []Value{}}
-		streamKey := args[i+1].str // First is 1, second is 2
+		streamKey := args[i+1].str
 		firstStreamIdPos := streamCount + 1
 		seen := args[firstStreamIdPos+i].str
 		stream, found := globalMap[streamKey]
 		if !found {
-			return Value{typ: "bstring", str: ""}
+			return c, Value{typ: "bstring", str: ""}
 		}
 		seenId, err := parseStreamId(seen)
 		if err != nil {
-			return Value{typ: "error", str: "Invalid seen id"}
+			return c, Value{typ: "error", str: "Invalid seen id"}
 		}
 		for _, s := range stream.stream {
-			// If s > seen
+
 			if greaterThan(s.id, seenId.StreamId) {
 				d := Value{typ: "array", arr: []Value{}}
 				for k, v := range s.map0 {
@@ -202,15 +265,16 @@ func xread(args []Value) Value {
 				}
 				kk := Value{typ: "array", arr: []Value{{typ: "bstring", str: s.id.String()}, d}}
 				res.arr = append(res.arr, kk)
+				c++
 			}
 		}
 		ress.arr = append(ress.arr, Value{
-			typ: "array", 
-			arr: []Value {
-				{typ: "bstring", str: streamKey}, 
+			typ: "array",
+			arr: []Value{
+				{typ: "bstring", str: streamKey},
 				res,
 			},
 		})
 	}
-	return ress
+	return c, ress
 }
