@@ -219,9 +219,6 @@ func xadd(args []Value) Value {
 	}
 	streamKey := args[0].str
 	id := args[1].str
-	if !validateStreamKey(streamKey, id) {
-		return Value{typ: "error", str: "Invalid stream key"}
-	}
 	if len(args) % 2 != 0 {
 		return Value{typ: "error", str: "XADD requires an even number of arguments"}
 	}
@@ -229,6 +226,9 @@ func xadd(args []Value) Value {
 	if !found {
 		stream = &MapValue{typ: "stream", stream: []StreamValue{}}
 		globalMap[streamKey] = stream
+	}
+	if !validateStreamKey(streamKey, id) {
+		return Value{typ: "error", str: "Invalid stream key"}
 	}
 	
 	mapi := make(map[string]string)
