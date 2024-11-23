@@ -86,7 +86,7 @@ func TestValidateStreamKey(t *testing.T) {
 		{
 			id:      StreamId{0, 1},
 			lastId: StreamId{1, 0},
-			expected: "id0 was less than lastId0",
+			expected: "ERR The ID specified in XADD is equal or smaller than the target stream top item",
 		},
 		{
 			id:      StreamId{1, 1},
@@ -96,12 +96,12 @@ func TestValidateStreamKey(t *testing.T) {
 		{
 			id:      StreamId{1, 0},
 			lastId: StreamId{1, 1},
-			expected: "id1 must be greater than lastId1 if id0 == lastId0",
+			expected: "ERR The ID specified in XADD must be greater than 1-1",
 		},
 		{
 			id:      StreamId{1, 1},
 			lastId: StreamId{1, 1},
-			expected: "id1 must be greater than lastId1 if id0 == lastId0",
+			expected: "ERR The ID specified in XADD is equal or smaller than the target stream top item",
 		},
 	}
 
@@ -112,14 +112,14 @@ func TestValidateStreamKey(t *testing.T) {
 		expect := test.expected
 		if expect == "" {
 			if err != nil {
-				t.Errorf("validateStreamKey(%v) a = %v; want %v", test.id, err, test.expected)
+				t.Fatalf("validateStreamKey(%v) = %v; want %v", test.id, err, test.expected)
 			}
 		} else {
 			if err == nil {
 				t.Fatalf("Expected error, got nil")
 			}
 			if err.Error() != test.expected {
-				t.Errorf("validateStreamKey(%v) b = %v; want %v", test.id, err, test.expected)
+				t.Fatalf("validateStreamKey(%v) = %v; want %v", test.id, err, test.expected)
 			}
 		}
 	}
