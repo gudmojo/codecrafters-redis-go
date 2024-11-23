@@ -19,7 +19,7 @@ type MapValue struct {
 	str string
 	stream []StreamValue
 	lastId StreamId
-	chans []chan int
+	chans []chan struct{}
 }
 
 func main() {

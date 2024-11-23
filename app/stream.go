@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"strconv"
 	"strings"
@@ -39,7 +38,7 @@ func xadd(args []Value) Value {
 	streamKey := args[0].str
 	stream, found := globalMap[streamKey]
 	if !found {
-		stream = &MapValue{typ: "stream", chans: []chan int{}, stream: []StreamValue{}}
+		stream = &MapValue{typ: "stream", chans: []chan struct{}{}, stream: []StreamValue{}}
 		globalMap[streamKey] = stream
 	}
 	idStr := args[1].str
@@ -71,9 +70,7 @@ func xadd(args []Value) Value {
 	stream.stream = append(stream.stream, StreamValue{id: id, map0: map0})
 	stream.lastId = id
 	for _, r := range(stream.chans) {
-		log.Printf("Sending to channel")
-		r <- 1
-		log.Printf("Sent to channel")
+		r <- struct{}{}
 	}
 	return Value{typ: "bstring", str: id.String()}
 }
@@ -200,17 +197,12 @@ func xread(args []Value) Value {
 	if c > 0 {
 		return ress
 	}
-	log.Println("Make channel")
-	ch := make(chan int)
+	ch := make(chan struct{})
 	for _, streamKey := range(streamKeys) {
-	log.Println("Make channel 2")
-		log.Printf("Make channel %s", streamKey)
 		stream, found := globalMap[streamKey]
 		if !found {
-			log.Println("Make channel3")
 			continue
 		}
-		log.Println("Appending channel")
 		stream.chans = append(stream.chans, ch)
 	}
     after := time.Duration(math.MaxInt64)
@@ -219,25 +211,17 @@ func xread(args []Value) Value {
 	}
 	select {
 	case <-ch:
-		log.Println("Channel received")
 		_, z := doXread(streamKeys, seens)
 		for _, streamKey := range(streamKeys) {
-			log.Println("Channel received 1")
 			stream, found := globalMap[streamKey]
 			if !found {
-				log.Println("Channel received 2")
 				continue
 			}
-			log.Println("Channel received 3")
 			stream.chans = remove(stream.chans, ch)
 		}
-		log.Println("Channel received 4")
 		close(ch)
-		log.Println("Channel received 5")
-		log.Printf("Channel received %v", serialize(z))
 		return z
 	case <-time.After(after):
-		log.Println("Timeout")
 		return Value{typ: "bstring", str: ""}
 	}
 }
@@ -255,7 +239,7 @@ func parseXreadStreamKeys(args []Value, streamsPos int) ([]string, []string) {
 	return streamKeys, seens
 }
 
-func remove(s []chan int, c chan int) []chan int {
+func remove(s []chan struct{}, c chan struct{}) []chan struct{} {
 	for i, v := range s {
 		if v == c {
 			return append(s[:i], s[i+1:]...)
