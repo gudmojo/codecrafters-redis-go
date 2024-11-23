@@ -39,7 +39,7 @@ func TestParse(t *testing.T) {
 		if (err != nil) != test.err {
 			t.Fatalf("parse(%v) error = %v; want err = %v", test.input, err, test.err)
 		}
-		if !test.err && !equal(output, test.expected) {
+		if !test.err && !equalArrays(output, test.expected) {
 			t.Errorf("parse(%v) = %v; want %v", test.input, output, test.expected)
 		}
 	}
@@ -125,15 +125,28 @@ func TestValidateStreamKey(t *testing.T) {
 	}
 }
 
-func equal(a, b []Value) bool {
+func equalArrays(a, b []Value) bool {
 	if len(a) != len(b) {
 		return false
 	}
 	for i := range a {
-		if a[i] != b[i] {
+		if !equal(a[i], b[i]) {
 			return false
 		}
 	}
 	return true
 }
 
+func equal(a, b Value) bool {
+	switch a.typ {
+	case "bstring":
+		return b.typ == "bstring" && a.str == b.str
+	case "string":
+		return b.typ == "string" && a.str == b.str
+	case "error":
+		return b.typ == "error" && a.str == b.str
+	case "array":
+		return b.typ == "array" && equalArrays(a.arr, b.arr)
+	}
+	return false
+}

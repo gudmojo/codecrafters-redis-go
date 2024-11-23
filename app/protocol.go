@@ -5,11 +5,13 @@ import (
 	"log"
 	"strconv"
 	"unicode"
+	"strings"
 )
 
 type Value struct {
 	typ string
 	str string
+	arr []Value
 }
 
 func parse(buf []byte) ([]Value, error) {
@@ -47,6 +49,12 @@ func serialize(v Value) string {
 		return fmt.Sprintf("+%s\r\n", v.str)
 	case "error":
 		return fmt.Sprintf("-%s\r\n", v.str)
+	case "array":
+		var builder strings.Builder 
+		for _, x := range v.arr {
+			builder.WriteString(serialize(x))
+		}
+		return fmt.Sprintf("*%d\r\n%s", len(v.arr), builder.String())
 	}
 	return ""
 }

@@ -82,6 +82,8 @@ func handleCommand(cmd []Value) Value {
 		return type0(cmd[1].str)
 	case "XADD":
 		return xadd(cmd[1:])
+	case "XRANGE":
+		return xrange(cmd[1:])
 	}
 	return Value{typ: "error", str: "Unknown command"}
 }

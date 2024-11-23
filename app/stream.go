@@ -5,10 +5,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"log"
 )
 
 type StreamValue struct {
-	id string
+	id StreamId
 	map0 map[string]string
 }
 
@@ -66,7 +67,7 @@ func xadd(args []Value) Value {
 	for i := 2; i < len(args); i += 2 {
 		map0[args[i].str] = args[i+1].str
 	}
-	stream.stream = append(stream.stream, StreamValue{id: idStr, map0: map0})
+	stream.stream = append(stream.stream, StreamValue{id: id, map0: map0})
 	stream.lastId = id
 	return Value{typ: "bstring", str: id.String()}
 }
@@ -101,4 +102,60 @@ func validateStreamKey(id StreamId, lastId StreamId) error {
 		return fmt.Errorf("ERR The ID specified in XADD must be greater than %d-%d", lastId.id0, lastId.id1)
 	}
 	return nil
+}
+
+func xrange(args []Value) Value {
+	var err error
+	var res Value = Value{typ: "array", arr: []Value{}}
+	if len(args) < 3 {
+		return Value{typ: "error", str: "XRANGE requires 3 arguments"}
+	}
+	streamKey := args[0].str
+	start := args[1].str
+	end := args[2].str
+	stream, found := globalMap[streamKey]
+	if !found {
+		return Value{typ: "bstring", str: ""}
+	}
+	startId, err := parseStreamId(start)
+	if err != nil {
+		return Value{typ: "error", str: "Invalid start id"}
+	}
+	endId, err := parseStreamId(end)
+	if err != nil {
+		return Value{typ: "error", str: "Invalid end id"}
+	}
+	for _, s := range stream.stream {
+		// If s >= start and s <= end
+		if !lessThan(s.id, startId.StreamId) && !greaterThan(s.id, endId.StreamId) {
+			d := Value{typ: "array", arr: []Value{}}
+			for k, v := range s.map0 {
+				d.arr = append(d.arr, Value{typ: "bstring", str: k})
+				d.arr = append(d.arr, Value{typ: "bstring", str: v})
+			}
+			kk := Value{typ: "array", arr: []Value{{typ: "bstring", str: s.id.String()}, d}}
+			res.arr = append(res.arr, kk)
+		}
+	}
+	return res
+}
+
+func lessThan(p1, p2 StreamId) bool {
+	if p1.id0 < p2.id0 {
+		return true
+	}
+	if p1.id0 > p2.id0 {
+		return false
+	}
+	return p1.id1 < p2.id1
+}
+
+func greaterThan(p1, p2 StreamId) bool {
+	if p1.id0 > p2.id0 {
+		return true
+	}
+	if p1.id0 < p2.id0 {
+		return false
+	}
+	return p1.id1 > p2.id1
 }
