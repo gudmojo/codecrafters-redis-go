@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"strconv"
 	"strings"
@@ -164,4 +165,38 @@ func greaterThan(p1, p2 StreamId) bool {
 		return false
 	}
 	return p1.id1 > p2.id1
+}
+
+func xread(args []Value) Value {
+	var err error
+	var res Value = Value{typ: "array", arr: []Value{}}
+	if len(args) < 2 {
+		return Value{typ: "error", str: "XRANGE requires 2 arguments"}
+	}
+	streamKey := args[0].str
+	seen := args[1].str
+	stream, found := globalMap[streamKey]
+	if !found {
+		return Value{typ: "bstring", str: ""}
+	}
+	seenId, err := parseStreamId(seen)
+	if err != nil {
+		return Value{typ: "error", str: "Invalid seen id"}
+	}
+	for _, s := range stream.stream {
+		// If s > seen
+		if greaterThan(s.id, seenId.StreamId) {
+			d := Value{typ: "array", arr: []Value{}}
+			for k, v := range s.map0 {
+				d.arr = append(d.arr, Value{typ: "bstring", str: k})
+				d.arr = append(d.arr, Value{typ: "bstring", str: v})
+			}
+			kk := Value{typ: "array", arr: []Value{{typ: "bstring", str: s.id.String()}, d}}
+			res.arr = append(res.arr, kk)
+		}
+	}
+	name := Value{typ: "bstring", str: streamKey}
+	f := Value{typ: "array", arr: []Value{name, res}}
+	log.Printf("xread: %v", serialize(f))
+	return f
 }
