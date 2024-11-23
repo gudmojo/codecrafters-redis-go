@@ -19,22 +19,18 @@ func parse(buf []byte) ([]Value, error) {
 		log.Println("Error reading number of arguments")
 		return nil, err
 	}
-	//log.Println("c", c)
 	cmd := make([]Value, c)
 	for j := 0; j < c; j++ {
 		i += 3 // Skip \r\n$
 		var bulkLen int
 		i, bulkLen, err = ReadNumber(buf, i)
-		//log.Println("bulkLen", bulkLen)
 		if err != nil {
 			log.Println("Error reading bulk length")
 			return nil, err
 		}
 		i += 2 // Skip \r\n
 		value := string(buf[i : i+bulkLen])
-		//log.Println("value", value)
 		cmd[j] = Value{typ: "bstring", str: value}
-		//log.Println("x")
 		i += bulkLen
 	}
 	return cmd, nil
