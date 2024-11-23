@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type StreamValue struct {
@@ -26,6 +27,7 @@ type StreamIdPre struct {
 }
 
 func xadd(args []Value) Value {
+	var err error
 	if len(args) < 2 {
 		return Value{typ: "error", str: "XADD requires at least 2 arguments"}
 	}
@@ -39,9 +41,14 @@ func xadd(args []Value) Value {
 		globalMap[streamKey] = stream
 	}
 	idStr := args[1].str
-	idPre, err := parseStreamId(idStr)
-	if err != nil {
-		return Value{typ: "error", str: "Invalid stream id"}
+	var idPre StreamIdPre
+	if idStr == "*" {
+		idPre = StreamIdPre{StreamId: StreamId{int(time.Now().UnixMilli()), 0}, typ: 1}
+	} else {
+		idPre, err = parseStreamId(idStr)
+		if err != nil {
+			return Value{typ: "error", str: "Invalid stream id"}
+		}	
 	}
 	id := idPre.StreamId
 	if idPre.typ == 1 {
