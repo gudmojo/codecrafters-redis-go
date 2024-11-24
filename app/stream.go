@@ -190,6 +190,15 @@ func xread(args []Value) Value {
 		return Value{typ: "error", str: "Expected streams keyword"}
 	}
 	streamKeys, seens := parseXreadStreamKeys(args, streamsPos)
+	for i, streamKey := range(streamKeys) {
+		stream, found := globalMap[streamKey]
+		if !found {
+			continue
+		}
+		if seens[i] == "$" {
+			seens[i] = stream.lastId.String()
+		}
+	}
 	c, ress := doXread(streamKeys, seens)
 	if block < 0 {
 		return ress
