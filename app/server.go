@@ -12,6 +12,8 @@ import (
 
 // The in-memory datastore
 var globalMap = make(map[string]*MapValue)
+var configDir = ""
+var configDbFilename = ""
 
 type MapValue struct {
 	typ string
@@ -21,8 +23,9 @@ type MapValue struct {
 	lastId StreamId
 	chans []chan struct{}
 }
-
+// --dir /tmp/redis-files --dbfilename dump.rdb
 func main() {
+	parseArgs()
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
 
@@ -38,6 +41,25 @@ func main() {
 			os.Exit(1)
 		}
 		go handleConnection(conn)	
+	}
+}
+
+func parseArgs() {
+	if len(os.Args) < 2 {
+		return
+	}
+	for i := 1; i < len(os.Args); i++ {
+		if os.Args[i] == "--dir" {
+			if i + 1 < len(os.Args) {
+				configDir = os.Args[i + 1]
+			}
+		}
+		if os.Args[i] == "--dbfilename" {
+			if i + 1 < len(os.Args) {
+				// Load the data from the file
+				configDbFilename = os.Args[i + 1]
+			}
+		}
 	}
 }
 
@@ -83,6 +105,8 @@ func handleCommand(cmd []Value) Value {
 		return xrange(cmd[1:])
 	case "XREAD":
 		return xread(cmd[1:])
+	case "CONFIG":
+		return config(cmd[1:])
 	}
 	return Value{typ: "error", str: "Unknown command"}
 }
@@ -145,4 +169,19 @@ func type0(key string) Value {
 		return Value{typ: "string", str: "none"}
 	}
 	return Value{typ: "string", str: value.typ}
+}
+
+func config(args []Value) Value {
+	if len(args) < 2 {
+		return Value{typ: "error", str: "CONFIG requires at least 2 arguments"}
+	}
+	if args[0].str == "GET" {
+		if args[1].str == "dir" {
+			return Value{typ: "array", arr: []Value{{typ: "bstring", str: "dir"}, {typ: "bstring", str: configDir}}} 
+		}
+		if args[1].str == "dbfilename" {
+			return Value{typ: "array", arr: []Value{{typ: "bstring", str: "dbfilename"}, {typ: "bstring", str: configDbFilename}}} 
+		}
+	}
+	return Value{typ: "error", str: "Invalid CONFIG command"}
 }
