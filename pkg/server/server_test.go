@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"testing"
@@ -10,13 +10,13 @@ func TestSerialize(t *testing.T) {
 		input    Value
 		expected string
 	}{
-		{Value{typ: "bstring", str: "hello"}, "$5\r\nhello\r\n"},
-		{Value{typ: "string", str: "OK"}, "+OK\r\n"},
-		{Value{typ: "error", str: "ERR unknown command"}, "-ERR unknown command\r\n"},
+		{Value{Typ: "bstring", Str: "hello"}, "$5\r\nhello\r\n"},
+		{Value{Typ: "string", Str: "OK"}, "+OK\r\n"},
+		{Value{Typ: "error", Str: "ERR unknown command"}, "-ERR unknown command\r\n"},
 	}
 
 	for _, test := range tests {
-		output := serialize(test.input)
+		output := Serialize(test.input)
 		if output != test.expected {
 			t.Errorf("serialize(%v) = %v; want %v", test.input, output, test.expected)
 		}
@@ -28,14 +28,14 @@ func TestParse(t *testing.T) {
 		expected []Value
 		err      bool
 	}{
-		{"*2\r\n$4\r\nECHO\r\n$3\r\nhey\r\n", []Value{{typ:"bstring", str:"ECHO"}, {typ:"bstring", str:"hey"}}, false},
-		{"*1\r\n$4\r\nPING\r\n", []Value{{typ:"bstring", str:"PING"}}, false},
-		{"*3\r\n$3\r\nSET\r\n$3\r\nkey\r\n$5\r\nvalue\r\n", []Value{{typ:"bstring", str:"SET"}, {typ:"bstring", str:"key"}, {typ:"bstring", str:"value"}}, false},
+		{"*2\r\n$4\r\nECHO\r\n$3\r\nhey\r\n", []Value{{Typ:"bstring", Str:"ECHO"}, {Typ:"bstring", Str:"hey"}}, false},
+		{"*1\r\n$4\r\nPING\r\n", []Value{{Typ:"bstring", Str:"PING"}}, false},
+		{"*3\r\n$3\r\nSET\r\n$3\r\nkey\r\n$5\r\nvalue\r\n", []Value{{Typ:"bstring", Str:"SET"}, {Typ:"bstring", Str:"key"}, {Typ:"bstring", Str:"value"}}, false},
 		{"*2\r\n$4\r\nECHO\r\n$-1\r\n", nil, true},
 	}
 
 	for _, test := range tests {
-		output, err := parse([]byte(test.input))
+		output, err := Parse([]byte(test.input))
 		if (err != nil) != test.err {
 			t.Fatalf("parse(%v) error = %v; want err = %v", test.input, err, test.err)
 		}
@@ -138,15 +138,15 @@ func equalArrays(a, b []Value) bool {
 }
 
 func equal(a, b Value) bool {
-	switch a.typ {
+	switch a.Typ {
 	case "bstring":
-		return b.typ == "bstring" && a.str == b.str
+		return b.Typ == "bstring" && a.Str == b.Str
 	case "string":
-		return b.typ == "string" && a.str == b.str
+		return b.Typ == "string" && a.Str == b.Str
 	case "error":
-		return b.typ == "error" && a.str == b.str
+		return b.Typ == "error" && a.Str == b.Str
 	case "array":
-		return b.typ == "array" && equalArrays(a.arr, b.arr)
+		return b.Typ == "array" && equalArrays(a.Arr, b.Arr)
 	}
 	return false
 }

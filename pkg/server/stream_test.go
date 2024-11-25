@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"testing"
@@ -13,11 +13,11 @@ func TestParseXreadStreamKeys(t *testing.T) {
 	}{
 		{
 			args: []Value{
-				{typ: "bstring", str: "streams"},
-				{typ: "bstring", str: "stream1"},
-				{typ: "bstring", str: "stream2"},
-				{typ: "bstring", str: "1-1"},
-				{typ: "bstring", str: "2-2"},
+				{Typ: "bstring", Str: "streams"},
+				{Typ: "bstring", Str: "stream1"},
+				{Typ: "bstring", Str: "stream2"},
+				{Typ: "bstring", Str: "1-1"},
+				{Typ: "bstring", Str: "2-2"},
 			},
 			streamsPos:    0,
 			expectedKeys:  []string{"stream1", "stream2"},
@@ -25,13 +25,13 @@ func TestParseXreadStreamKeys(t *testing.T) {
 		},
 		{
 			args: []Value{
-				{typ: "bstring", str: "block"},
-				{typ: "bstring", str: "1000"},
-				{typ: "bstring", str: "streams"},
-				{typ: "bstring", str: "stream3"},
-				{typ: "bstring", str: "stream4"},
-				{typ: "bstring", str: "3-3"},
-				{typ: "bstring", str: "4-4"},
+				{Typ: "bstring", Str: "block"},
+				{Typ: "bstring", Str: "1000"},
+				{Typ: "bstring", Str: "streams"},
+				{Typ: "bstring", Str: "stream3"},
+				{Typ: "bstring", Str: "stream4"},
+				{Typ: "bstring", Str: "3-3"},
+				{Typ: "bstring", Str: "4-4"},
 			},
 			streamsPos:    2,
 			expectedKeys:  []string{"stream3", "stream4"},

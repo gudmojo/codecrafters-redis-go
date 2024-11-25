@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"fmt"
@@ -9,12 +9,12 @@ import (
 )
 
 type Value struct {
-	typ string
-	str string
-	arr []Value
+	Typ string
+	Str string
+	Arr []Value
 }
 
-func parse(buf []byte) ([]Value, error) {
+func Parse(buf []byte) ([]Value, error) {
 	i := 1 // Skip *
 	i, c, err := ReadNumber(buf, i)
 	if err != nil {
@@ -32,29 +32,29 @@ func parse(buf []byte) ([]Value, error) {
 		}
 		i += 2 // Skip \r\n
 		value := string(buf[i : i+bulkLen])
-		cmd[j] = Value{typ: "bstring", str: value}
+		cmd[j] = Value{Typ: "bstring", Str: value}
 		i += bulkLen
 	}
 	return cmd, nil
 }
 
-func serialize(v Value) string {
-	switch v.typ {
+func Serialize(v Value) string {
+	switch v.Typ {
 	case "bstring":
-		if v.str == "" {
+		if v.Str == "" {
 			return "$-1\r\n"
 		}
-		return fmt.Sprintf("$%d\r\n%s\r\n", len(v.str), v.str)
+		return fmt.Sprintf("$%d\r\n%s\r\n", len(v.Str), v.Str)
 	case "string":
-		return fmt.Sprintf("+%s\r\n", v.str)
+		return fmt.Sprintf("+%s\r\n", v.Str)
 	case "error":
-		return fmt.Sprintf("-%s\r\n", v.str)
+		return fmt.Sprintf("-%s\r\n", v.Str)
 	case "array":
 		var builder strings.Builder 
-		for _, x := range v.arr {
-			builder.WriteString(serialize(x))
+		for _, x := range v.Arr {
+			builder.WriteString(Serialize(x))
 		}
-		return fmt.Sprintf("*%d\r\n%s", len(v.arr), builder.String())
+		return fmt.Sprintf("*%d\r\n%s", len(v.Arr), builder.String())
 	}
 	return ""
 }
