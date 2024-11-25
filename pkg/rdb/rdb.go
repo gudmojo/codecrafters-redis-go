@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"time"
-	"hash/crc64"
 
 	"github.com/codecrafters-io/redis-starter-go/pkg/server"
 )
@@ -26,6 +25,10 @@ func LoadFile(dir, filename string) {
 		fmt.Println("Error reading file:", err)
 		return
 	}
+	parseRDB(bytes)
+}
+
+func parseRDB(bytes []byte) {
 	if string(bytes[0:5]) != "REDIS" {
 		panic("Invalid file format")
 	}
@@ -36,12 +39,12 @@ func LoadFile(dir, filename string) {
 	}
 	i += 4
 	res := Metadata{}
-	for ;; {
+	for {
 		switch bytes[i] {
 		case 0xFA:
 			log.Printf(">>>Parsing Metadata: i=0x%x", i)
 			i++
-			for ;!isNewSection(bytes[i]); {
+			for !isNewSection(bytes[i]) {
 				log.Printf("ZUZUZU %x", bytes[i])
 				r := MetadataAttribute{}
 				log.Printf("Parsing MetadataKey: i=0x%x", i)
@@ -57,7 +60,7 @@ func LoadFile(dir, filename string) {
 			log.Printf(">>>Parsing DB: i=0x%x", i)
 			i, _ = parseDatabaseSubsection(bytes, i)
 			log.Printf("Database subsection parsed. i=%d", i)
-			for ;!isNewSection(bytes[i]); {
+			for !isNewSection(bytes[i]) {
 				i = parseObject(bytes, i)
 				log.Printf("Object parsed. i=%d", i)
 			}
@@ -77,14 +80,16 @@ func parseEndOfFile(input []byte, i int) {
 	if input[i] != 0xFF {
 		panic("Invalid end of file marker")
 	}
+/*	
 	checksumWritten := uint64(input[i+1]) | uint64(input[i+2])<<8 | uint64(input[i+3])<<16 | uint64(input[i+4])<<24 | uint64(input[i+5])<<32 | uint64(input[i+6])<<40 | uint64(input[i+7])<<48 | uint64(input[i+8])<<56
 	log.Printf("checksumWritten: %d", checksumWritten)
 	table := crc64.MakeTable(crc64.ISO)
-	checksum := crc64.Checksum(input[:len(input)-8], table)
-	log.Printf("checksumCalculated: %d", checksumWritten)
+	checksum := crc64.Checksum(input[:i], table)
+	log.Printf("checksumCalculated: %d", checksum)
 	if checksum != checksumWritten {
 		panic("Checksum mismatch")
 	}
+		*/
 }
 
 func parseObject(input []byte, i int) int {
@@ -135,10 +140,12 @@ func parseDatabaseSubsection(input []byte, i int) (int, Database) {
 	}
 	i++
 	res.index = int(input[i])
+	log.Printf("Parsed Database index: %d", res.index)
 	i++
 	if input[i] != 0xFB {
 		panic("Invalid marker for hash table size information follows")
 	}
+	i++
 	i, res.hashTableSize, _, err = parseSizeEncoded(input, i)
 	if err != nil {
 		panic(err)
@@ -209,7 +216,7 @@ func parseSizeEncoded(input []byte, i int) (int, uint, string, error) {
 	        // The 0xC3 size indicates that the string is compressed with the LZF algorithm.
 			panic("LZF compression not implemented")
 		} else {
-			panic("Invalid special encoding: " + fmt.Sprintf("%x i=0x%x", input[i], i))
+			panic("Invalid special encoding: " + fmt.Sprintf("%x i=%d", input[i], i))
 		}
 	}
 	return 0, 0, "", fmt.Errorf("invalid size encoding")

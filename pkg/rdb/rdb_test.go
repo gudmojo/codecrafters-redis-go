@@ -37,16 +37,16 @@ func TestParseSizeEncoded(t *testing.T) {
 		expected int
 	}{
 		// If the first two bits are 0b00:
-    	// The size is the remaining 6 bits of the byte.
+		// The size is the remaining 6 bits of the byte.
 		{[]byte{0b00000001}, 1},
 		{[]byte{0b00100000}, intPow(2, 5)},
 		// If the first two bits are 0b01:
-        // The size is the next 14 bits
+		// The size is the next 14 bits
 		{[]byte{0b01000000, 0b00000001}, 1},
 		{[]byte{0b01100000, 0b00000000}, intPow(2, 13)},
 		// If the first two bits are 0b10:
-        // Ignore the remaining 6 bits of the first byte.
-        // The size is the next 4 bytes
+		// Ignore the remaining 6 bits of the first byte.
+		// The size is the next 4 bytes
 		{[]byte{0b10000000, 0, 0, 0, 1}, 1},
 		{[]byte{0b10001000, 0b01000000, 0b00000000, 0b00000000, 0b00000000}, intPow(2, 30)},
 		{[]byte{0b10001000, 0b10000000, 0b00000000, 0b00000000, 0b00000000}, intPow(2, 31)},
@@ -92,4 +92,46 @@ func TestIntPow(t *testing.T) {
 			t.Fatalf("intPow(%d, %d) = %d; expected %d", tt.base, tt.exp, result, tt.expected)
 		}
 	}
+}
+
+func TestRdbRead(t *testing.T) {
+	input := []byte{
+		// REDIS0011
+		0x52, 0x45, 0x44, 0x49, 0x53, 0x30, 0x30, 0x31, 0x31,
+		// Metadata section
+		0xfa, 
+		// size=10 "redis-bits"
+		0x0a, 0x72, 0x65, 0x64, 0x69, 0x73, 0x2d, 0x62, 0x69, 0x74, 0x73,
+		// c0 encoded "64"
+		0xc0, 0x40,
+		// Metadata section
+		0xfa,
+		// size=9 "redis-ver"
+		0x09, 0x72, 0x65, 0x64, 0x69, 0x73, 0x2d, 0x76, 0x65, 0x72,
+		// size=5 "7.2.0" 
+		0x05, 0x37, 0x2e, 0x32, 0x2e, 0x30, 
+		// Database subsection
+		0xfe,
+		// index=0 
+		0x00,
+		// hash table size marker
+		0xfb,
+		// size encoded 1
+		0x01,
+		// size encoded 0
+		0x00,
+		// type string
+		0x00,
+		// key size=5 "apple" 
+		0x05, 0x61, 0x70, 0x70, 0x6c, 0x65,
+		// value size=5 "grape" 
+		0x05, 0x67, 0x72, 0x61, 0x70, 0x65, 
+		// File end marker
+		0xff,
+		// Checksum
+		0x40, 0xb7, 0xdc, 0x4f, 0x95, 0x6e, 0x07, 0x91, 
+		// Junk to ignore
+		0x0a,
+	}
+	parseRDB(input)
 }
