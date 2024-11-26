@@ -42,29 +42,29 @@ func parseRDB(bytes []byte) {
 	for {
 		switch bytes[i] {
 		case 0xFA:
-			log.Printf(">>>Parsing Metadata: i=0x%x", i)
+			log.Printf(">>>Parsing Metadata: i=%d", i)
 			i++
-			for !isNewSection(bytes[i]) {
+			for !isNewSection(bytes[i], i) {
 				log.Printf("ZUZUZU %x", bytes[i])
 				r := MetadataAttribute{}
-				log.Printf("Parsing MetadataKey: i=0x%x", i)
+				log.Printf("Parsing MetadataKey: i=%d", i)
 				i, r.name = parseStringEncoded(bytes, i)
 				log.Printf("Parsed MetadataKey: %s", r.name)
-				log.Printf("Parsing MetadataValue: i=0x%x", i)
+				log.Printf("Parsing MetadataValue: i=%d", i)
 				i, r.value = parseStringEncoded(bytes, i)
 				log.Printf("Parsed MetadataValue: %s", r.value)
 				res.attr = append(res.attr, r)
 			}
 			log.Printf("===Parsed Metadata: %v", res)
 		case 0xFE:
-			log.Printf(">>>Parsing DB: i=0x%x", i)
+			log.Printf(">>>Parsing DB: i=%d", i)
 			i, _ = parseDatabaseSubsection(bytes, i)
 			log.Printf("Database subsection parsed. i=%d", i)
-			for !isNewSection(bytes[i]) {
+			for !isNewSection(bytes[i], i) {
 				i = parseObject(bytes, i)
 				log.Printf("Object parsed. i=%d", i)
 			}
-			log.Printf("===Parsed DB: i=0x%x", i)
+			log.Printf("===Parsed DB: i=%d", i)
 		case 0xFF:
 			parseEndOfFile(bytes, i)
 			return
@@ -72,7 +72,8 @@ func parseRDB(bytes []byte) {
 	}
 }
 
-func isNewSection(b byte) bool {
+func isNewSection(b byte, i int) bool {
+	log.Printf("isNewSection: %x i=%d", b, i)
 	return b == 0xFF || b == 0xFE || b == 0xFA
 }
 
@@ -167,7 +168,7 @@ func parseSizeEncoded(input []byte, i int) (int, uint, string, error) {
 	// The size is the remaining 6 bits of the byte.
 	if input[i]>>6 == 0 {
 		x := uint(input[i])
-		log.Printf("Parsed size encoded 1: %d i=0x%x", x, i)
+		log.Printf("Parsed size encoded 1: %d i=%d", x, i)
 		return i+1, x, "", nil
 	}
 	// If the first two bits are 0b01:
@@ -190,10 +191,11 @@ func parseSizeEncoded(input []byte, i int) (int, uint, string, error) {
 			// The 0xC0 size indicates the string is an 8-bit integer.
 			// In this example, the string is "123".
 			// C0 7B
+			i++
 			x := fmt.Sprintf("%d", input[i])
-			i += 2
+			i++
 			log.Printf("Parsed size encoded 4: %s", x)
-			return i + 1, 0, x, nil
+			return i, 0, x, nil
 		} else if input[i] == 0xC1 {
 			// The 0xC1 size indicates the string is a 16-bit integer.
 			// The remaining bytes are in little-endian (read right-to-left).
