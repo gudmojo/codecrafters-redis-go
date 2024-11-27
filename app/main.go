@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 )
 
 var config Config
@@ -56,10 +57,11 @@ func parseArgs() Config {
 			}
 		}
 		if os.Args[i] == "--replicaof" {
-			config.ReplicationMaster = os.Args[i+1]
+			s := strings.Split(os.Args[i+1], " ")
+			config.ReplicationMaster = s[0]
 			config.Role = "slave"
 			if i+2 < len(os.Args) {
-				port, err := strconv.Atoi(os.Args[i+2])
+				port, err := strconv.Atoi(s[1])
 				if err != nil {
 					log.Println("Error parsing master port:", err)
 				}
