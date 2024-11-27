@@ -23,10 +23,10 @@ type Database struct {
 	expirySize    uint
 }
 
-func rdbLoadFile(dir, filename string) {
-	fn := filename
-	if dir != "" {
-		fn = dir + "/" + filename
+func rdbLoadFile() {
+	fn := config.DbFilename
+	if config.Dir != "" {
+		fn = config.Dir + "/" + config.DbFilename
 	}
 	file, err := os.Open(fn)
 	if err != nil {
