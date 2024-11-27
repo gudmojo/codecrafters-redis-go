@@ -96,8 +96,8 @@ func keysCommand(args []Value) Value {
 }
 
 func infoCommand(args []Value) Value {
-	if len(args) < 2 {
-		return Value{Typ: "error", Str: "INFO requires at least 2 arguments"}
+	if len(args) < 1 {
+		return Value{Typ: "error", Str: "INFO requires at least 1 argument"}
 	}
 	if args[0].Str == "replication" {
 		return Value{Typ: "bstring", Str: "role:master"} 
