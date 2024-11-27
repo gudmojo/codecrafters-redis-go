@@ -55,7 +55,7 @@ func parseRDB(bytes []byte) {
 		switch bytes[i] {
 		case 0xFA:
 			i++
-			for !isNewSection(bytes[i], i) {
+			for !isNewSection(bytes[i]) {
 				r := RdbMetadataAttribute{}
 				i, r.name = parseStringEncoded(bytes, i)
 				i, r.value = parseStringEncoded(bytes, i)
@@ -63,7 +63,7 @@ func parseRDB(bytes []byte) {
 			}
 		case 0xFE:
 			i, _ = parseDatabaseSubsection(bytes, i)
-			for !isNewSection(bytes[i], i) {
+			for !isNewSection(bytes[i]) {
 				i = parseObject(bytes, i)
 			}
 		case 0xFF:
@@ -73,7 +73,7 @@ func parseRDB(bytes []byte) {
 	}
 }
 
-func isNewSection(b byte, i int) bool {
+func isNewSection(b byte) bool {
 	return b == 0xFF || b == 0xFE || b == 0xFA
 }
 

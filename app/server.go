@@ -67,12 +67,6 @@ func handleConnection(conn net.Conn) {
 	}
 }
 
-type Config struct {
-	Dir string
-	DbFilename string
-	Port int
-}
-
 func HandleRequest(req []Value) Value {
 	switch strings.ToUpper(req[0].Str) {
 	case "PING":

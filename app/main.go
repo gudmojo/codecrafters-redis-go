@@ -8,6 +8,15 @@ import (
 
 var config Config
 
+type Config struct {
+	Dir string
+	DbFilename string
+	Port int
+	Role string
+	ReplicationMaster string
+	ReplicationPort int
+}
+
 func main() {
 	config = parseArgs()
 	rdbLoadFile()
@@ -17,6 +26,7 @@ func main() {
 func parseArgs() Config {
 	config := Config{
 		Port: 6379,
+		Role: "master",
 	}
 	if len(os.Args) < 2 {
 		return config
@@ -35,12 +45,22 @@ func parseArgs() Config {
 		}
 		if os.Args[i] == "--port" {
 			if i+1 < len(os.Args) {
-				// Load the data from the file
 				port, err := strconv.Atoi(os.Args[i+1])
 				if err != nil {
 					log.Println("Error parsing port:", err)
 				}
 				config.Port = port
+			}
+		}
+		if os.Args[i] == "--replicaof" {
+			config.ReplicationMaster = os.Args[i+1]
+			config.Role = "slave"
+			if i+2 < len(os.Args) {
+				port, err := strconv.Atoi(os.Args[i+2])
+				if err != nil {
+					log.Println("Error parsing master port:", err)
+				}
+				config.ReplicationPort = port
 			}
 		}
 	}

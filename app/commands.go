@@ -100,7 +100,7 @@ func infoCommand(args []Value) Value {
 		return Value{Typ: "error", Str: "INFO requires at least 1 argument"}
 	}
 	if args[0].Str == "replication" {
-		return Value{Typ: "bstring", Str: "role:master"} 
+		return Value{Typ: "bstring", Str: "role:" + config.Role}
 	}
 	return Value{Typ: "error", Str: "Invalid INFO command"}
 }
