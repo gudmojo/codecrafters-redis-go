@@ -1,4 +1,4 @@
-package rdb
+package main
 
 import (
 	"fmt"
@@ -6,11 +6,24 @@ import (
 	"log"
 	"os"
 	"time"
-
-	"github.com/codecrafters-io/redis-starter-go/pkg/server"
 )
 
-func LoadFile(dir, filename string) {
+type Metadata struct {
+	attr []MetadataAttribute
+}
+
+type MetadataAttribute struct {
+	name  string
+	value string
+}
+
+type Database struct {
+	index         int
+	hashTableSize uint
+	expirySize    uint
+}
+
+func rdbLoadFile(dir, filename string) {
 	fn := filename
 	if dir != "" {
 		fn = dir + "/" + filename
@@ -113,24 +126,9 @@ func parseObject(input []byte, i int) int {
 		// string type
 		var s string
 		i, s = parseStringEncoded(input, i)
-		server.GlobalMap[key] = &server.MapValue{Typ: "string", Str: s, Exp: exp}
+		GlobalMap[key] = &MapValue{Typ: "string", Str: s, Exp: exp}
 	}
 	return i
-}
-
-type Metadata struct {
-	attr []MetadataAttribute
-}
-
-type MetadataAttribute struct {
-	name  string
-	value string
-}
-
-type Database struct {
-	index         int
-	hashTableSize uint
-	expirySize    uint
 }
 
 func parseDatabaseSubsection(input []byte, i int) (int, Database) {

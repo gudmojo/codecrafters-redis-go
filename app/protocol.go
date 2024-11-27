@@ -1,4 +1,4 @@
-package server
+package main
 
 import (
 	"fmt"
@@ -7,12 +7,6 @@ import (
 	"unicode"
 	"strings"
 )
-
-type Value struct {
-	Typ string
-	Str string
-	Arr []Value
-}
 
 func Parse(buf []byte) ([]Value, error) {
 	i := 1 // Skip *

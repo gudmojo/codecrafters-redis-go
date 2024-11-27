@@ -1,7 +1,10 @@
-package server
+package main
 
 import (
 	"log"
+	"net"
+	"os"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -9,6 +12,7 @@ import (
 
 // The in-memory datastore
 var GlobalMap = make(map[string]*MapValue)
+
 var ConfigDir = ""
 var ConfigDbFilename = ""
 
@@ -19,6 +23,76 @@ type MapValue struct {
 	Stream []StreamValue
 	LastId StreamId
 	Chans []chan struct{}
+}
+
+type Value struct {
+	Typ string
+	Str string
+	Arr []Value
+}
+
+func main() {
+	parseArgs()
+	rdbLoadFile(ConfigDir, ConfigDbFilename)
+	// You can use print statements as follows for debugging, they'll be visible when running tests.
+	fmt.Println("Logs from your program will appear here!")
+
+	l, err := net.Listen("tcp", "0.0.0.0:6379")
+	if err != nil {
+		fmt.Println("Failed to bind to port 6379")
+		os.Exit(1)
+	}
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			fmt.Println("Error accepting connection: ", err.Error())
+			os.Exit(1)
+		}
+		go handleConnection(conn)	
+	}
+}
+
+func handleConnection(conn net.Conn) {
+    defer conn.Close()
+
+	for {
+		// Read incoming data
+		buf := make([]byte, 1024)
+		_, err := conn.Read(buf)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		var res Value
+		cmd, err := Parse(buf)
+		if err != nil {
+			fmt.Println(err)
+			res = Value{Typ: "error", Str: "Error parsing command"}
+		} else {
+			res = HandleCommand(cmd)
+		}
+		serialzed := Serialize(res)
+		conn.Write([]byte(serialzed))
+	}
+}
+
+func parseArgs() {
+	if len(os.Args) < 2 {
+		return
+	}
+	for i := 1; i < len(os.Args); i++ {
+		if os.Args[i] == "--dir" {
+			if i + 1 < len(os.Args) {
+				ConfigDir = os.Args[i + 1]
+			}
+		}
+		if os.Args[i] == "--dbfilename" {
+			if i + 1 < len(os.Args) {
+				// Load the data from the file
+				ConfigDbFilename = os.Args[i + 1]
+			}
+		}
+	}
 }
 
 func HandleCommand(cmd []Value) Value {
