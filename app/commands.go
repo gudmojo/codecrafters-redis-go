@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -29,7 +30,7 @@ func setCommand(args []Value) Value {
 		key := args[0].Str
 		value := args[1].Str
 		exp := args[3].Str
-		currentTime := time.Now() 
+		currentTime := time.Now()
 		ms, ok := strconv.Atoi(exp)
 		if ok != nil {
 			return Value{Typ: "error", Str: "Error parsing milliseconds"}
@@ -72,10 +73,10 @@ func configCommand(args []Value) Value {
 	}
 	if args[0].Str == "GET" {
 		if args[1].Str == "dir" {
-			return Value{Typ: "array", Arr: []Value{{Typ: "bstring", Str: "dir"}, {Typ: "bstring", Str: config.Dir}}} 
+			return Value{Typ: "array", Arr: []Value{{Typ: "bstring", Str: "dir"}, {Typ: "bstring", Str: config.Dir}}}
 		}
 		if args[1].Str == "dbfilename" {
-			return Value{Typ: "array", Arr: []Value{{Typ: "bstring", Str: "dbfilename"}, {Typ: "bstring", Str: config.DbFilename}}} 
+			return Value{Typ: "array", Arr: []Value{{Typ: "bstring", Str: "dbfilename"}, {Typ: "bstring", Str: config.DbFilename}}}
 		}
 	}
 	return Value{Typ: "error", Str: "Invalid CONFIG command"}
@@ -100,7 +101,9 @@ func infoCommand(args []Value) Value {
 		return Value{Typ: "error", Str: "INFO requires at least 1 argument"}
 	}
 	if args[0].Str == "replication" {
-		return Value{Typ: "bstring", Str: "role:" + config.Role}
+		master_replid := "8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
+		master_repl_offset := 0
+		return Value{Typ: "bstring", Str: fmt.Sprintf("role:%s\nmaster_replid:%s\nmaster_repl_offset:%d", config.Role, master_replid, master_repl_offset)}
 	}
 	return Value{Typ: "error", Str: "Invalid INFO command"}
 }
