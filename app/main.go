@@ -57,16 +57,17 @@ func parseArgs() Config {
 			}
 		}
 		if os.Args[i] == "--replicaof" {
+			config.Role = "slave"
 			s := strings.Split(os.Args[i+1], " ")
 			config.ReplicationMaster = s[0]
-			config.Role = "slave"
-			if i+2 < len(os.Args) {
+			if i+1 < len(os.Args) {
 				port, err := strconv.Atoi(s[1])
 				if err != nil {
 					log.Println("Error parsing master port:", err)
 				}
 				config.ReplicationPort = port
 			}
+			log.Printf("Replicating from %s:%d", config.ReplicationMaster, config.ReplicationPort)
 		}
 	}
 	return config
