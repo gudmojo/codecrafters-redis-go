@@ -20,6 +20,9 @@ type Config struct {
 func main() {
 	config = parseArgs()
 	rdbLoadFile()
+	if config.Role == "slave" {
+		go startReplication()
+	}
 	startServer()
 }
 
