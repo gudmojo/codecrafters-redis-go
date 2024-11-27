@@ -3,13 +3,12 @@ package main
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"time"
 )
 
 type RdbMetadata struct {
-	attr []MetadataAttribute
+	attr []RdbMetadataAttribute
 }
 
 type RdbMetadataAttribute struct {
