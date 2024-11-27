@@ -6,15 +6,15 @@ import (
 	"time"
 )
 
-func ping() Value {
+func pingCommand() Value {
 	return Value{Typ: "string", Str: "PONG"}
 }
 
-func echo(arg string) Value {
+func echoCommand(arg string) Value {
 	return Value{Typ: "string", Str: arg}
 }
 
-func set(args []Value) Value {
+func setCommand(args []Value) Value {
 	if len(args) < 2 {
 		return Value{Typ: "error", Str: "SET requires at least 2 arguments"}
 	}
@@ -42,7 +42,7 @@ func set(args []Value) Value {
 	return Value{Typ: "error", Str: "SET requires 2 or 4 arguments"}
 }
 
-func get(key string) Value {
+func getCommand(key string) Value {
 	value, ok := GlobalMap[key]
 	if !ok {
 		return Value{Typ: "bstring", Str: ""}
@@ -54,7 +54,7 @@ func get(key string) Value {
 	return Value{Typ: "bstring", Str: value.Str}
 }
 
-func type0(key string) Value {
+func typeCommand(key string) Value {
 	value, ok := GlobalMap[key]
 	if !ok {
 		return Value{Typ: "string", Str: "none"}
@@ -81,7 +81,7 @@ func configCommand(args []Value) Value {
 	return Value{Typ: "error", Str: "Invalid CONFIG command"}
 }
 
-func keys(args []Value) Value {
+func keysCommand(args []Value) Value {
 	if len(args) < 1 {
 		return Value{Typ: "error", Str: "KEYS requires at least 1 argument"}
 	}
@@ -93,4 +93,14 @@ func keys(args []Value) Value {
 		keys = append(keys, Value{Typ: "bstring", Str: k})
 	}
 	return Value{Typ: "array", Arr: keys}
+}
+
+func infoCommand(args []Value) Value {
+	if len(args) < 2 {
+		return Value{Typ: "error", Str: "INFO requires at least 2 arguments"}
+	}
+	if args[0].Str == "replication" {
+		return Value{Typ: "bstring", Str: "role:master"} 
+	}
+	return Value{Typ: "error", Str: "Invalid INFO command"}
 }

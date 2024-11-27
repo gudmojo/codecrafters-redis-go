@@ -74,15 +74,15 @@ type Config struct {
 func HandleRequest(req []Value) Value {
 	switch strings.ToUpper(req[0].Str) {
 	case "PING":
-		return ping()
+		return pingCommand()
 	case "ECHO":
-		return echo(req[1].Str)
+		return echoCommand(req[1].Str)
 	case "SET":
-		return set(req[1:])
+		return setCommand(req[1:])
 	case "GET":
-		return get(req[1].Str)
+		return getCommand(req[1].Str)
 	case "TYPE":
-		return type0(req[1].Str)
+		return typeCommand(req[1].Str)
 	case "XADD":
 		return xadd(req[1:])
 	case "XRANGE":
@@ -92,7 +92,9 @@ func HandleRequest(req []Value) Value {
 	case "CONFIG":
 		return configCommand(req[1:])
 	case "KEYS":
-		return keys(req[1:])
+		return keysCommand(req[1:])
+	case "INFO":
+		return infoCommand(req[1:])
 	}
-	return Value{Typ: "error", Str: "Unknown command"}
+return Value{Typ: "error", Str: "Unknown command"}
 }
