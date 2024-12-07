@@ -36,7 +36,7 @@ func psyncCommand(args []Value) Value {
 	replId := args[0].Str
 	offset := args[1].Str
 	log.Printf("PSYNC: %s %s", replId, offset)
-	return Value{Typ: "string", Str: fmt.Sprintf("FULLRESYNC %s 0", replId)}
+	return Value{Typ: "string", Str: fmt.Sprintf("FULLRESYNC %s 0", master_replid)}
 }
 
 func echoCommand(arg string) Value {
@@ -129,8 +129,6 @@ func infoCommand(args []Value) Value {
 		return Value{Typ: "error", Str: "INFO requires at least 1 argument"}
 	}
 	if args[0].Str == "replication" {
-		master_replid := "8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
-		master_repl_offset := 0
 		return Value{Typ: "bstring", Str: fmt.Sprintf("role:%s\nmaster_replid:%s\nmaster_repl_offset:%d", config.Role, master_replid, master_repl_offset)}
 	}
 	return Value{Typ: "error", Str: "Invalid INFO command"}

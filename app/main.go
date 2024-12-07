@@ -8,6 +8,8 @@ import (
 )
 
 var config Config
+var master_replid = "8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
+var master_repl_offset = 0
 
 type Config struct {
 	Dir string
