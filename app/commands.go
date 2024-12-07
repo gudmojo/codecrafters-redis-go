@@ -11,6 +11,24 @@ func pingCommand() Value {
 	return Value{Typ: "string", Str: "PONG"}
 }
 
+func replconfCommand(args []Value) Value {
+	if len(args) < 2 {
+		return Value{Typ: "error", Str: "REPLCONF requires at least 2 arguments"}
+	}
+	switch args[0].Str {
+	case "listening-port":
+		port, err := strconv.Atoi(args[1].Str)
+		if err != nil {
+			return Value{Typ: "error", Str: "Error parsing port"}
+		}
+		log.Printf("Replica listening port: %d", port)
+		// TODO: Save the port
+	case "capa":
+		log.Printf("replsync capa: %s", args[1].Str)
+	}
+	return Value{Typ: "string", Str: "OK"}
+}
+
 func echoCommand(arg string) Value {
 	return Value{Typ: "string", Str: arg}
 }
