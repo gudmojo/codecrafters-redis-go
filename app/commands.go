@@ -29,6 +29,16 @@ func replconfCommand(args []Value) Value {
 	return Value{Typ: "string", Str: "OK"}
 }
 
+func psyncCommand(args []Value) Value {
+	if len(args) < 2 {
+		return Value{Typ: "error", Str: "PSYNC requires at least 2 arguments"}
+	}
+	replId := args[0].Str
+	offset := args[1].Str
+	log.Printf("PSYNC: %s %s", replId, offset)
+	return Value{Typ: "string", Str: fmt.Sprintf("FULLRESYNC %s 0", replId)}
+}
+
 func echoCommand(arg string) Value {
 	return Value{Typ: "string", Str: arg}
 }

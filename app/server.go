@@ -93,6 +93,8 @@ func HandleRequest(req []Value) Value {
 		return infoCommand(req[1:])
 	case "REPLCONF":
 		return replconfCommand(req[1:])
+	case "PSYNC":
+		return psyncCommand(req[1:])
 	}
 return Value{Typ: "error", Str: "Unknown command"}
 }

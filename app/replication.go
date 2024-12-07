@@ -13,6 +13,9 @@ func startReplication() {
 	ping(conn)
 	replConf(conn, "listening-port", strconv.Itoa(config.Port))
 	replConf(conn, "capa", "psync2")
+	log.Println("Starting replication $$$$$$$$$$$$$$$")
+	psync(conn, []string{"?", "-1"})
+	log.Println("Starting replication $$$$$$$$$$$$$$$")
 }
 
 func ping(conn net.Conn) {
@@ -26,7 +29,7 @@ func ping(conn net.Conn) {
 	if err != nil {
 		log.Fatalf("Failed to read: %v", err)
 	}
-	fmt.Println("Response from server:", string(reply))
+	fmt.Println("Response to ping:", string(reply))
 }
 
 func replConf(conn net.Conn, key string, value string) {
@@ -40,7 +43,28 @@ func replConf(conn net.Conn, key string, value string) {
 	if err != nil {
 		log.Fatalf("Failed to read: %v", err)
 	}
-	fmt.Println("Response from server:", string(reply))
+	fmt.Println("Response to replconf:", string(reply))
+}
+
+func psync(conn net.Conn, args []string) {
+	a := make([]Value, 0, len(args) + 1)
+	a = append(a, Value{Typ: "bstring", Str: "PSYNC"})
+	for _, arg := range args {
+		a = append(a, Value{Typ: "bstring", Str: arg})
+	}
+	ser := Serialize(Value{Typ: "array", Arr: a})
+	log.Printf("Sending PSYNC: %s", ser)
+	_, err := conn.Write([]byte(ser))
+	if err != nil {
+		log.Fatalf("Failed to write: %v", err)
+	}
+
+	reply := make([]byte, 256)
+	_, err = conn.Read(reply)
+	if err != nil {
+		log.Fatalf("Failed to read: %v", err)
+	}
+	fmt.Println("Response to psync:", string(reply))
 }
 
 func connectToMaster() net.Conn {
