@@ -17,7 +17,7 @@ func TestSerialize(t *testing.T) {
 
 	for _, test := range tests {
 		output := Serialize(test.input)
-		if output != test.expected {
+		if string(output) != test.expected {
 			t.Errorf("serialize(%v) = %v; want %v", test.input, output, test.expected)
 		}
 	}

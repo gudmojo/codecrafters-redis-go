@@ -25,6 +25,9 @@ type Value struct {
 	Typ string
 	Str string
 	Arr []Value
+	PsyncHeader *Value
+	PsyncData *Value
+	Bytes []byte
 }
 
 func startServer() {

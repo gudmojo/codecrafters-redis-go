@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
 	"log"
 	"strconv"
@@ -36,7 +37,12 @@ func psyncCommand(args []Value) Value {
 	replId := args[0].Str
 	offset := args[1].Str
 	log.Printf("PSYNC: %s %s", replId, offset)
-	return Value{Typ: "string", Str: fmt.Sprintf("FULLRESYNC %s 0", master_replid)}
+	bytes, _ := base64.StdEncoding.DecodeString("UkVESVMwMDEx+glyZWRpcy12ZXIFNy4yLjD6CnJlZGlzLWJpdHPAQPoFY3RpbWXCbQi8ZfoIdXNlZC1tZW3CsMQQAPoIYW9mLWJhc2XAAP/wbjv+wP9aog==")
+	return Value{
+		Typ: "psync", 
+		PsyncHeader: &Value{Typ: "string", Str: fmt.Sprintf("FULLRESYNC %s 0", master_replid)}, 
+		PsyncData: &Value{Typ: "bytes", Bytes: bytes},
+	}
 }
 
 func echoCommand(arg string) Value {
