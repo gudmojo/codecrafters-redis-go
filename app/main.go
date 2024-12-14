@@ -24,9 +24,12 @@ func main() {
 	config = parseArgs()
 	rdbLoadFile()
 	if config.Role == "slave" {
-		go startReplication()
+		log.Println("Starting as a replica")
+		startReplica()
+	} else {
+		log.Println("Starting as a master")
+		startServer()
 	}
-	startServer()
 }
 
 func parseArgs() Config {

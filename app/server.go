@@ -43,18 +43,18 @@ func startServer() {
 			fmt.Println("Error accepting connection: ", err.Error())
 			os.Exit(1)
 		}
-		go handleConnection(conn)	
+		go handleConnection(&conn)	
 	}
 }
 
-func handleConnection(conn net.Conn) {
-    defer conn.Close()
+func handleConnection(conn *net.Conn) {
+    defer (*conn).Close()
 
 	for {
 		var res Value
 		// Read incoming data
 		requestBytes := make([]byte, 1024)
-		_, err := conn.Read(requestBytes)
+		_, err := (*conn).Read(requestBytes)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -63,41 +63,53 @@ func handleConnection(conn net.Conn) {
 		if err != nil {
 			fmt.Println(err)
 			res = Value{Typ: "error", Str: "Error parsing request"}
+			(*conn).Write([]byte(Serialize(res)))
+		} else if isAsyncRequestType(req) {
+			HandleAsyncRequest(conn, req)
 		} else {
 			res = HandleRequest(req)
+			(*conn).Write([]byte(Serialize(res)))
 		}
-		conn.Write([]byte(Serialize(res)))
 	}
 }
 
-func HandleRequest(req []Value) Value {
-	switch strings.ToUpper(req[0].Str) {
+func isAsyncRequestType(req *Value) bool {
+	return strings.ToUpper(req.Arr[0].Str) == "PSYNC"
+}
+
+func HandleAsyncRequest(conn *net.Conn, req *Value) {
+	switch strings.ToUpper(req.Arr[0].Str) {
+	case "PSYNC":
+		psyncCommand(conn, req)
+	}
+}
+
+func HandleRequest(req *Value) Value {
+	switch strings.ToUpper(req.Arr[0].Str) {
 	case "PING":
 		return pingCommand()
 	case "ECHO":
-		return echoCommand(req[1].Str)
+		return echoCommand(req)
 	case "SET":
-		return setCommand(req[1:])
+		return setCommand(req)
 	case "GET":
-		return getCommand(req[1].Str)
+		return getCommand(req)
 	case "TYPE":
-		return typeCommand(req[1].Str)
+		return typeCommand(req)
 	case "XADD":
-		return xadd(req[1:])
+		return xadd(req)
 	case "XRANGE":
-		return xrange(req[1:])
+		return xrange(req)
 	case "XREAD":
-		return xread(req[1:])
+		return xread(req)
 	case "CONFIG":
-		return configCommand(req[1:])
+		return configCommand(req)
 	case "KEYS":
-		return keysCommand(req[1:])
+		return keysCommand(req)
 	case "INFO":
-		return infoCommand(req[1:])
+		return infoCommand(req)
 	case "REPLCONF":
-		return replconfCommand(req[1:])
-	case "PSYNC":
-		return psyncCommand(req[1:])
+		return replconfCommand(req)
 	}
-return Value{Typ: "error", Str: "Unknown command"}
+	return Value{Typ: "error", Str: "Unknown command"}
 }

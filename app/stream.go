@@ -27,21 +27,22 @@ type StreamIdPre struct {
 	typ int
 }
 
-func xadd(args []Value) Value {
+func xadd(req *Value) Value {
+	args := req.Arr
 	var err error
-	if len(args) < 2 {
+	if len(args) < 3 {
 		return Value{Typ: "error", Str: "XADD requires at least 2 arguments"}
 	}
-	if len(args) % 2 != 0 {
+	if len(args) % 2 != 1 {
 		return Value{Typ: "error", Str: "XADD requires an even number of arguments"}
 	}
-	streamKey := args[0].Str
+	streamKey := args[1].Str
 	stream, found := GlobalMap[streamKey]
 	if !found {
 		stream = &MapValue{Typ: "stream", Chans: []chan struct{}{}, Stream: []StreamValue{}}
 		GlobalMap[streamKey] = stream
 	}
-	idStr := args[1].Str
+	idStr := args[2].Str
 	var idPre StreamIdPre
 	if idStr == "*" {
 		idPre = StreamIdPre{StreamId: StreamId{int(time.Now().UnixMilli()), 0}, typ: 1}
@@ -64,7 +65,7 @@ func xadd(args []Value) Value {
 		return Value{Typ: "error", Str: err.Error()}
 	}
 	map0 := make(map[string]string)
-	for i := 2; i < len(args); i += 2 {
+	for i := 3; i < len(args); i += 2 {
 		map0[args[i].Str] = args[i+1].Str
 	}
 	stream.Stream = append(stream.Stream, StreamValue{id: id, map0: map0})
@@ -107,15 +108,16 @@ func validateStreamKey(id StreamId, lastId StreamId) error {
 	return nil
 }
 
-func xrange(args []Value) Value {
+func xrange(req *Value) Value {
 	var err error
+	args := req.Arr
 	var res Value = Value{Typ: "array", Arr: []Value{}}
-	if len(args) < 3 {
+	if len(args) < 4 {
 		return Value{Typ: "error", Str: "XRANGE requires 3 arguments"}
 	}
-	streamKey := args[0].Str
-	start := args[1].Str
-	end := args[2].Str
+	streamKey := args[1].Str
+	start := args[2].Str
+	end := args[3].Str
 	stream, found := GlobalMap[streamKey]
 	if !found {
 		return Value{Typ: "bstring", Str: ""}
@@ -169,22 +171,23 @@ func greaterThan(p1, p2 StreamId) bool {
 	return p1.id1 > p2.id1
 }
 
-func xread(args []Value) Value {
+func xread(req *Value) Value {
 	var err error
-	streamsPos := 0
+	args := req.Arr
+	streamsPos := 1
 	block := -1
-	if len(args) < 3 {
+	if len(args) < 4 {
 		return Value{Typ: "error", Str: "XREAD requires at least 3 arguments"}
 	}
-	if args[0].Str == "block" {
-		if len(args) < 5 {
+	if args[1].Str == "block" {
+		if len(args) < 6 {
 			return Value{Typ: "error", Str: "XREAD with block requires at least 5 arguments"}
 		}
-		block, err = strconv.Atoi(args[1].Str)
+		block, err = strconv.Atoi(args[2].Str)
 		if err != nil {
 			return Value{Typ: "error", Str: "Invalid block argument"}
 		}
-		streamsPos = 2
+		streamsPos = 3
 	}
 	if args[streamsPos].Str != "streams" {
 		return Value{Typ: "error", Str: "Expected streams keyword"}

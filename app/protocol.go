@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func Parse(buf []byte) ([]Value, error) {
+func Parse(buf []byte) (*Value, error) {
 	i := 1 // Skip *
 	i, c, err := ReadNumber(buf, i)
 	if err != nil {
@@ -29,7 +29,7 @@ func Parse(buf []byte) ([]Value, error) {
 		cmd[j] = Value{Typ: "bstring", Str: value}
 		i += bulkLen
 	}
-	return cmd, nil
+	return &Value{Typ: "array", Arr: cmd}, nil
 }
 
 func Serialize(v Value) []byte {
