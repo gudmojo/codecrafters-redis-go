@@ -20,16 +20,16 @@ func TestReadNumber(t *testing.T) {
 		{[]byte(""), 0, 0, 0, true},
 	}
 
-	for _, test := range tests {
+	for j, test := range tests {
 		le, output, err := ReadNumber(test.input, test.start)
 		if (err != nil) != test.err {
-			t.Errorf("ReadNumber(%v, %d) error = %v; want err = %v", test.input, test.start, err, test.err)
+			t.Errorf("ReadNumber(%d) error = %v; want err = %v", j, err, test.err)
 		}
 		if output != test.expected {
-			t.Errorf("ReadNumber(%v, %d) = %d; want %d", test.input, test.start, output, test.expected)
+			t.Errorf("ReadNumber(%d) = %d; want %d", j, output, test.expected)
 		}
 		if le != test.expectEnd {
-			t.Errorf("ReadNumber() = %d; want %d", le, test.expectEnd)
+			t.Errorf("ReadNumber(%d) = %d; want %d", j, le, test.expectEnd)
 		}
 	}
 }
@@ -91,14 +91,20 @@ func equalArrays(a, b []Value) bool {
 		return false
 	}
 	for i := range a {
-		if !equal(a[i], b[i]) {
+		if !equal(&a[i], &b[i]) {
 			return false
 		}
 	}
 	return true
 }
 
-func equal(a, b Value) bool {
+func equal(a, b *Value) bool {
+	if a == nil {
+		return b == nil
+	} else if b == nil {
+		return false
+	}
+	
 	switch a.Typ {
 	case "bstring":
 		return b.Typ == "bstring" && a.Str == b.Str

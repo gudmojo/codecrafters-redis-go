@@ -21,6 +21,7 @@ func startReplica() {
 		Log("Replica waiting for update")
 		requestBytes := make([]byte, 1024)
 		b, err := r.Read(requestBytes)
+		i := 0
 		if err != nil {
 			if err.Error() == "EOF" {
 				Log("Connection to master was closed")
@@ -31,13 +32,16 @@ func startReplica() {
 			Log(fmt.Sprintf("Bytes read: %s", requestBytes[:b]))
 			select{} // Block forever so that the replica doesn't terminate
 		}
-		fmt.Println("Received update from master:", string(requestBytes))
-		req, err := Parse(requestBytes)
-		if err != nil {
-			fmt.Println(err)
-		} else {
-			Log(fmt.Sprintf("Replica received command: %v", req))
-			_ = HandleRequest(req)
+		fmt.Println("Received update from master:", string(requestBytes[:b]))
+		for ;i<b; {
+			var req *Value
+			i, req, err = ParseArrayOfBstringValues(requestBytes[:b], i)
+			if err != nil {
+				fmt.Println(err)
+			} else {
+				Log(fmt.Sprintf("Replica received command: %v", req))
+				_ = HandleRequest(req)
+			}	
 		}
 	}
 }
@@ -49,11 +53,11 @@ func ping(conn *net.Conn) {
 	}
 
 	reply := make([]byte, 256)
-	_, err = (*conn).Read(reply)
+	b, err := (*conn).Read(reply)
 	if err != nil {
 		log.Fatalf("Failed to read: %v", err)
 	}
-	fmt.Println("Response to ping:", string(reply))
+	fmt.Println("Response to ping:", string(reply[:b]))
 }
 
 func replConf(conn *net.Conn, key string, value string) {
@@ -63,11 +67,11 @@ func replConf(conn *net.Conn, key string, value string) {
 	}
 
 	reply := make([]byte, 256)
-	_, err = (*conn).Read(reply)
+	b, err := (*conn).Read(reply)
 	if err != nil {
 		log.Fatalf("Failed to read: %v", err)
 	}
-	fmt.Println("Response to replconf:", string(reply))
+	fmt.Println("Response to replconf:", string(reply[:b]))
 }
 
 func psync(conn *net.Conn, args []string) {
@@ -77,18 +81,18 @@ func psync(conn *net.Conn, args []string) {
 		a = append(a, Value{Typ: "bstring", Str: arg})
 	}
 	ser := Serialize(Value{Typ: "array", Arr: a})
-	Log(fmt.Sprintf("Replica Sending PSYNC"))
+	Log("Replica Sending PSYNC")
 	_, err := (*conn).Write([]byte(ser))
 	if err != nil {
 		log.Fatalf("Failed to write: %v", err)
 	}
 
 	reply := make([]byte, 1024)
-	_, err = (*conn).Read(reply)
+	b, err := (*conn).Read(reply)
 	if err != nil {
 		log.Fatalf("Failed to read: %v", err)
 	}
-	fmt.Println("Replica received response to psync:", string(reply))
+	fmt.Println("Replica received response to psync:", string(reply[:b]))
 }
 
 func connectToMaster() *net.Conn {

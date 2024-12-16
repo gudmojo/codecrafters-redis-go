@@ -53,9 +53,9 @@ func handleConnection(conn *net.Conn) {
 		var res Value
 		// Read incoming data
 		requestBytes := make([]byte, 1024)
-		Log(fmt.Sprintf("Master reading"))
-		_, err := (*conn).Read(requestBytes)
-		Log(fmt.Sprintf("Master read"))
+		Log("Reading request")
+		b, err := (*conn).Read(requestBytes)
+		i := 0
 		if err != nil {
 			if err.Error() == "EOF" {
 				fmt.Printf("Client closed connection")
@@ -64,18 +64,20 @@ func handleConnection(conn *net.Conn) {
 			fmt.Printf("Error in handleConnection read: %v", err)
 			return
 		}
-		req, err := Parse(requestBytes)
-		if err != nil {
-			fmt.Println(err)
-			res = Value{Typ: "error", Str: "Error parsing request"}
-			(*conn).Write([]byte(Serialize(res)))
-		} else if isAsyncRequestType(req) {
-			HandleAsyncRequest(conn, req)
-		} else {
-			res = HandleRequest(req)
-			Log(fmt.Sprintf("Master writing"))
-			(*conn).Write([]byte(Serialize(res)))
-			Log(fmt.Sprintf("Master wrote"))
+		for ; i<b; {
+			var req *Value
+			i, req, err = ParseArrayOfBstringValues(requestBytes[:b], i)
+			if err != nil {
+				fmt.Println(err)
+				res = Value{Typ: "error", Str: "Error parsing request"}
+				(*conn).Write([]byte(Serialize(res)))
+			} else if isAsyncRequestType(req) {
+				HandleAsyncRequest(conn, req)
+			} else {
+				res = HandleRequest(req)
+				Log("Writing response")
+				(*conn).Write([]byte(Serialize(res)))
+			}	
 		}
 	}
 }
