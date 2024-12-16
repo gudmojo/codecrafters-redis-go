@@ -32,7 +32,6 @@ func replconfCommand(req *Value) Value {
 }
 
 func psyncCommand(conn *net.Conn, req *Value) {
-	Log(fmt.Sprintf("ZZZZZZZZZXXXXXXXXX"))
 	args := req.Arr
 	if len(args) < 3 {
 		panic("PSYNC requires at least 2 arguments")
@@ -163,7 +162,6 @@ func keysCommand(req *Value) Value {
 }
 
 func infoCommand(req *Value) Value {
-	fmt.Println("INFO INFO INFO")
 	args := req.Arr
 	if len(args) < 2 {
 		return Value{Typ: "error", Str: "INFO requires at least 1 argument"}

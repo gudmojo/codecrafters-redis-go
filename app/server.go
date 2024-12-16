@@ -102,9 +102,7 @@ func HandleRequest(req *Value) Value {
 	case "SET":
 		return setCommand(req)
 	case "GET":
-		x := getCommand(req)
-		Log("finished GET")
-		return x
+		return getCommand(req)
 	case "TYPE":
 		return typeCommand(req)
 	case "XADD":

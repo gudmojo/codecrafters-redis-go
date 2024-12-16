@@ -70,7 +70,7 @@ func parseArgs() Config {
 			if i+1 < len(os.Args) {
 				port, err := strconv.Atoi(s[1])
 				if err != nil {
-					Log(fmt.Sprintf("Error parsing master port:", err))
+					Log(fmt.Sprintf("Error parsing master port: %v", err))
 				}
 				config.ReplicationPort = port
 			}

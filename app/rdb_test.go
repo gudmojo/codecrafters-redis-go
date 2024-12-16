@@ -9,7 +9,7 @@ import (
 func TestHeader(t *testing.T) {
 	input := []byte{0x52, 0x45, 0x44, 0x49, 0x53, 0x30, 0x30, 0x31, 0x31} // REDIS0011
 	for i := 0; i < len(input); i++ {
-		Log(fmt.Sprintf("%d %d %s", i, input[i], string(input[i]))
+		Log(fmt.Sprintf("%d %d %s", i, input[i], string(input[i])))
 	}
 }
 
@@ -53,8 +53,7 @@ func TestParseSizeEncoded(t *testing.T) {
 		{[]byte{0b10001111, 0b11111111, 0b11111111, 0b11111111, 0b11111111}, math.MaxUint32},
 	}
 
-	for i, tt := range tests {
-		Log(i)
+	for _, tt := range tests {
 		_, size, _, err := parseSizeEncoded(tt.input, 0)
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)

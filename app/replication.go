@@ -9,19 +9,12 @@ import (
 )
 
 func startReplica() {
-	Log("X")
 	conn := connectToMaster()
-	Log("X")
 	defer (*conn).Close()
-	Log("X")
 	ping(conn)
-	Log("X")
 	replConf(conn, "listening-port", strconv.Itoa(config.Port))
-	Log("X")
 	replConf(conn, "capa", "psync2")
-	Log("XX")
 	psync(conn, []string{"?", "-1"})
-	Log("Replica XXX")
 	// Listen to updates from master
 	r := bufio.NewReader(*conn)
 	for {
