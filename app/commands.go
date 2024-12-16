@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/base64"
 	"fmt"
-	"log"
 	"strconv"
 	"time"
 	"net"
@@ -24,23 +23,23 @@ func replconfCommand(req *Value) Value {
 		if err != nil {
 			return Value{Typ: "error", Str: "Error parsing port"}
 		}
-		log.Printf("Replica listening port: %d", port)
+		Log(fmt.Sprintf("Replica listening port: %d", port))
 		// TODO: Save the port
 	case "capa":
-		log.Printf("replsync capa: %s", args[2].Str)
+		Log(fmt.Sprintf("replsync capa: %s", args[2].Str))
 	}
 	return Value{Typ: "string", Str: "OK"}
 }
 
 func psyncCommand(conn *net.Conn, req *Value) {
-	log.Printf("ZZZZZZZZZXXXXXXXXX")
+	Log(fmt.Sprintf("ZZZZZZZZZXXXXXXXXX"))
 	args := req.Arr
 	if len(args) < 3 {
 		panic("PSYNC requires at least 2 arguments")
 	}
 	replId := args[1].Str
 	offset := args[2].Str
-	log.Printf("PSYNC: %s %s", replId, offset)
+	Log(fmt.Sprintf("PSYNC: %s %s", replId, offset))
 	bytes, _ := base64.StdEncoding.DecodeString("UkVESVMwMDEx+glyZWRpcy12ZXIFNy4yLjD6CnJlZGlzLWJpdHPAQPoFY3RpbWXCbQi8ZfoIdXNlZC1tZW3CsMQQAPoIYW9mLWJhc2XAAP/wbjv+wP9aog==")
 	res := Value{
 		Typ: "psync", 
@@ -49,10 +48,13 @@ func psyncCommand(conn *net.Conn, req *Value) {
 	}
 	(*conn).Write([]byte(Serialize(res)))
 	c := make(chan Value, 10000)
+	Log(fmt.Sprintf("Adding replica to GlobalReplicas"))
 	GlobalReplicas = append(GlobalReplicas, c)
+	Log(fmt.Sprintf("Added replica to GlobalReplicas"))
 	// Now that we have sent the full resync, we can start sending updates
 	// Read the command from a channel and send it to the replica
-	for cmd := range c {
+	for {
+		cmd := <-c
 		(*conn).Write([]byte(Serialize(cmd)))
 	}
 }
@@ -72,7 +74,8 @@ func setCommand(req *Value) Value {
 		key := args[1].Str
 		value := args[2].Str
 		GlobalMap[key] = &MapValue{Typ: "string", Str: value}
-		log.Printf("SET key: %s, value: %s", key, value)
+		Log(fmt.Sprintf("SET key: %s, value: %s", key, value))
+		sendCommandToReplicas(req)
 		return Value{Typ: "string", Str: "OK"}
 	}
 	if len(args) == 5 {
@@ -86,7 +89,7 @@ func setCommand(req *Value) Value {
 		}
 		futureTime := currentTime.Add(time.Duration(ms) * time.Millisecond)
 		GlobalMap[key] = &MapValue{Typ: "string", Str: value, Exp: futureTime}
-		log.Printf("SET key: %s, value: %s, exp: %s", key, value, futureTime)
+		Log(fmt.Sprintf("SET key: %s, value: %s, exp: %s", key, value, futureTime))
 		sendCommandToReplicas(req)
 		return Value{Typ: "string", Str: "OK"}
 	}
@@ -94,8 +97,11 @@ func setCommand(req *Value) Value {
 }
 
 func sendCommandToReplicas(req *Value) {
+	Log(fmt.Sprintf("Sending command to replicas, %d", len(GlobalReplicas)))
 	for _, replica := range GlobalReplicas {
+		Log(fmt.Sprintf("Sending command to replica"))
 		replica <- *req
+		Log(fmt.Sprintf("Sent command to replica"))
 	}
 }
 
@@ -157,12 +163,13 @@ func keysCommand(req *Value) Value {
 }
 
 func infoCommand(req *Value) Value {
+	fmt.Println("INFO INFO INFO")
 	args := req.Arr
 	if len(args) < 2 {
 		return Value{Typ: "error", Str: "INFO requires at least 1 argument"}
 	}
 	if args[1].Str == "replication" {
-		return Value{Typ: "bstring", Str: fmt.Sprintf("role:%s\nmaster_replid:%s\nmaster_repl_offset:%d", config.Role, master_replid, master_repl_offset)}
+		return Value{Typ: "bstring", Str: fmt.Sprintf("role:%s\nmaster_replid:%s\nmaster_repl_offset:%d\n", config.Role, master_replid, master_repl_offset)}
 	}
 	return Value{Typ: "error", Str: "Invalid INFO command"}
 }

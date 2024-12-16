@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"net"
@@ -8,33 +9,41 @@ import (
 )
 
 func startReplica() {
-	log.Println("X")
+	Log("X")
 	conn := connectToMaster()
-	log.Println("X")
+	Log("X")
 	defer (*conn).Close()
-	log.Println("X")
+	Log("X")
 	ping(conn)
-	log.Println("X")
+	Log("X")
 	replConf(conn, "listening-port", strconv.Itoa(config.Port))
-	log.Println("X")
+	Log("X")
 	replConf(conn, "capa", "psync2")
-	log.Println("XX")
+	Log("XX")
 	psync(conn, []string{"?", "-1"})
-	log.Println("Replica XXX")
+	Log("Replica XXX")
 	// Listen to updates from master
+	r := bufio.NewReader(*conn)
 	for {
+		Log("Replica waiting for update")
 		requestBytes := make([]byte, 1024)
-		_, err := (*conn).Read(requestBytes)
+		b, err := r.Read(requestBytes)
 		if err != nil {
-			log.Printf("Replica failed to read update: %v", err)
-			return
+			if err.Error() == "EOF" {
+				Log("Connection to master was closed")
+				select{} // Block forever so that the replica doesn't terminate
+			}
+			Log(fmt.Sprintf("Replica failed to read update: %v", err))
+			Log(fmt.Sprintf("Bytes read: %d", b))
+			Log(fmt.Sprintf("Bytes read: %s", requestBytes[:b]))
+			select{} // Block forever so that the replica doesn't terminate
 		}
 		fmt.Println("Received update from master:", string(requestBytes))
 		req, err := Parse(requestBytes)
 		if err != nil {
 			fmt.Println(err)
 		} else {
-			log.Printf("Replica received command: %v", req)
+			Log(fmt.Sprintf("Replica received command: %v", req))
 			_ = HandleRequest(req)
 		}
 	}
@@ -69,13 +78,13 @@ func replConf(conn *net.Conn, key string, value string) {
 }
 
 func psync(conn *net.Conn, args []string) {
-	a := make([]Value, 0, len(args) + 1)
+	a := make([]Value, 0, len(args)+1)
 	a = append(a, Value{Typ: "bstring", Str: "PSYNC"})
 	for _, arg := range args {
 		a = append(a, Value{Typ: "bstring", Str: arg})
 	}
 	ser := Serialize(Value{Typ: "array", Arr: a})
-	log.Printf("Replica Sending PSYNC")
+	Log(fmt.Sprintf("Replica Sending PSYNC"))
 	_, err := (*conn).Write([]byte(ser))
 	if err != nil {
 		log.Fatalf("Failed to write: %v", err)

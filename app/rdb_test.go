@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"math"
 	"testing"
 )
@@ -9,7 +9,7 @@ import (
 func TestHeader(t *testing.T) {
 	input := []byte{0x52, 0x45, 0x44, 0x49, 0x53, 0x30, 0x30, 0x31, 0x31} // REDIS0011
 	for i := 0; i < len(input); i++ {
-		log.Printf("%d %d %s", i, input[i], string(input[i]))
+		Log(fmt.Sprintf("%d %d %s", i, input[i], string(input[i]))
 	}
 }
 
@@ -54,7 +54,7 @@ func TestParseSizeEncoded(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		log.Println(i)
+		Log(i)
 		_, size, _, err := parseSizeEncoded(tt.input, 0)
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)

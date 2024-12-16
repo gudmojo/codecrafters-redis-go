@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -24,10 +24,12 @@ func main() {
 	config = parseArgs()
 	rdbLoadFile()
 	if config.Role == "slave" {
-		log.Println("Starting as a replica")
+		// Start responding to read requests
+		go startServer()
+		Log("Starting as a replica")
 		startReplica()
 	} else {
-		log.Println("Starting as a master")
+		Log("Starting as a master")
 		startServer()
 	}
 }
@@ -56,7 +58,7 @@ func parseArgs() Config {
 			if i+1 < len(os.Args) {
 				port, err := strconv.Atoi(os.Args[i+1])
 				if err != nil {
-					log.Println("Error parsing port:", err)
+					Log(fmt.Sprintf("Error parsing port: %v", err))
 				}
 				config.Port = port
 			}
@@ -68,11 +70,11 @@ func parseArgs() Config {
 			if i+1 < len(os.Args) {
 				port, err := strconv.Atoi(s[1])
 				if err != nil {
-					log.Println("Error parsing master port:", err)
+					Log(fmt.Sprintf("Error parsing master port:", err))
 				}
 				config.ReplicationPort = port
 			}
-			log.Printf("Replicating from %s:%d", config.ReplicationMaster, config.ReplicationPort)
+			Log(fmt.Sprintf("Replicating from %s:%d", config.ReplicationMaster, config.ReplicationPort))
 		}
 	}
 	return config

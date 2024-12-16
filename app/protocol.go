@@ -2,17 +2,16 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"strconv"
-	"unicode"
 	"strings"
+	"unicode"
 )
 
 func Parse(buf []byte) (*Value, error) {
 	i := 1 // Skip *
 	i, c, err := ReadNumber(buf, i)
 	if err != nil {
-		log.Println("Error reading number of arguments")
+		Log("Error reading number of arguments")
 		return nil, err
 	}
 	cmd := make([]Value, c)
@@ -21,7 +20,7 @@ func Parse(buf []byte) (*Value, error) {
 		var bulkLen int
 		i, bulkLen, err = ReadNumber(buf, i)
 		if err != nil {
-			log.Println("Error reading bulk length")
+			Log("Error reading bulk length")
 			return nil, err
 		}
 		i += 2 // Skip \r\n
@@ -44,7 +43,7 @@ func Serialize(v Value) []byte {
 	case "error":
 		return []byte(fmt.Sprintf("-%s\r\n", v.Str))
 	case "array":
-		var builder strings.Builder 
+		var builder strings.Builder
 		for _, x := range v.Arr {
 			builder.WriteString(string(Serialize(x)))
 		}
@@ -60,14 +59,13 @@ func Serialize(v Value) []byte {
 
 func ReadNumber(s []byte, i int) (int, int, error) {
 	j := i
-	for ; j < len(s) && unicode.IsDigit(rune(s[j])); {
+	for j < len(s) && unicode.IsDigit(rune(s[j])) {
 		j++
 	}
 	x, err := strconv.Atoi(string(s[i:j]))
 	if err != nil {
-		log.Println("Error parsing number:", err)
+		Log(fmt.Sprintf("Error parsing number: %v", err))
 		return 0, 0, err
 	}
 	return j, int(x), nil
 }
-

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"strings"
@@ -13,21 +12,21 @@ import (
 var GlobalMap = make(map[string]*MapValue)
 
 type MapValue struct {
-	Typ string
-	Exp time.Time
-	Str string
+	Typ    string
+	Exp    time.Time
+	Str    string
 	Stream []StreamValue
 	LastId StreamId
-	Chans []chan struct{}
+	Chans  []chan struct{}
 }
 
 type Value struct {
-	Typ string
-	Str string
-	Arr []Value
+	Typ         string
+	Str         string
+	Arr         []Value
 	PsyncHeader *Value
-	PsyncData *Value
-	Bytes []byte
+	PsyncData   *Value
+	Bytes       []byte
 }
 
 func startServer() {
@@ -36,27 +35,33 @@ func startServer() {
 		fmt.Println("Failed to bind to port 6379")
 		os.Exit(1)
 	}
-	log.Println("Server started on port", config.Port)
+	Log(fmt.Sprintf("Server started on port %d", config.Port))
 	for {
 		conn, err := l.Accept()
 		if err != nil {
 			fmt.Println("Error accepting connection: ", err.Error())
 			os.Exit(1)
 		}
-		go handleConnection(&conn)	
+		go handleConnection(&conn)
 	}
 }
 
 func handleConnection(conn *net.Conn) {
-    defer (*conn).Close()
+	defer (*conn).Close()
 
 	for {
 		var res Value
 		// Read incoming data
 		requestBytes := make([]byte, 1024)
+		Log(fmt.Sprintf("Master reading"))
 		_, err := (*conn).Read(requestBytes)
+		Log(fmt.Sprintf("Master read"))
 		if err != nil {
-			fmt.Println(err)
+			if err.Error() == "EOF" {
+				fmt.Printf("Client closed connection")
+				return
+			}
+			fmt.Printf("Error in handleConnection read: %v", err)
 			return
 		}
 		req, err := Parse(requestBytes)
@@ -68,7 +73,9 @@ func handleConnection(conn *net.Conn) {
 			HandleAsyncRequest(conn, req)
 		} else {
 			res = HandleRequest(req)
+			Log(fmt.Sprintf("Master writing"))
 			(*conn).Write([]byte(Serialize(res)))
+			Log(fmt.Sprintf("Master wrote"))
 		}
 	}
 }
@@ -85,7 +92,9 @@ func HandleAsyncRequest(conn *net.Conn, req *Value) {
 }
 
 func HandleRequest(req *Value) Value {
-	switch strings.ToUpper(req.Arr[0].Str) {
+	cmd := req.Arr[0].Str
+	Log(fmt.Sprintf("HANDLE REQUEST: %s", cmd))
+	switch strings.ToUpper(cmd) {
 	case "PING":
 		return pingCommand()
 	case "ECHO":
@@ -93,7 +102,9 @@ func HandleRequest(req *Value) Value {
 	case "SET":
 		return setCommand(req)
 	case "GET":
-		return getCommand(req)
+		x := getCommand(req)
+		Log("finished GET")
+		return x
 	case "TYPE":
 		return typeCommand(req)
 	case "XADD":

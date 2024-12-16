@@ -1,17 +1,17 @@
 package main
 
 import (
+	"fmt"
 	"testing"
-	"log"
 )
 
 func TestReadNumber(t *testing.T) {
 	tests := []struct {
-		input    []byte
-		start    int
-		expected int
+		input     []byte
+		start     int
+		expected  int
 		expectEnd int
-		err      bool
+		err       bool
 	}{
 		{[]byte("12345"), 0, 12345, 5, false},
 		{[]byte("6789"), 0, 6789, 4, false},
@@ -35,41 +35,41 @@ func TestReadNumber(t *testing.T) {
 }
 func TestValidateStreamKey(t *testing.T) {
 	tests := []struct {
-		id      StreamId
-		lastId    StreamId
+		id       StreamId
+		lastId   StreamId
 		expected string
 	}{
 		{
-			id:      StreamId{1, 0},
-			lastId: StreamId{0, 0},
+			id:       StreamId{1, 0},
+			lastId:   StreamId{0, 0},
 			expected: "",
 		},
 		{
-			id:      StreamId{0, 1},
-			lastId: StreamId{1, 0},
+			id:       StreamId{0, 1},
+			lastId:   StreamId{1, 0},
 			expected: "ERR The ID specified in XADD is equal or smaller than the target stream top item",
 		},
 		{
-			id:      StreamId{1, 1},
-			lastId: StreamId{1, 0},
+			id:       StreamId{1, 1},
+			lastId:   StreamId{1, 0},
 			expected: "",
 		},
 		{
-			id:      StreamId{1, 0},
-			lastId: StreamId{1, 1},
+			id:       StreamId{1, 0},
+			lastId:   StreamId{1, 1},
 			expected: "ERR The ID specified in XADD must be greater than 1-1",
 		},
 		{
-			id:      StreamId{1, 1},
-			lastId: StreamId{1, 1},
+			id:       StreamId{1, 1},
+			lastId:   StreamId{1, 1},
 			expected: "ERR The ID specified in XADD is equal or smaller than the target stream top item",
 		},
 	}
 
 	for i, test := range tests {
-		log.Printf("i=%d", i)
+		Log(fmt.Sprintf("i=%d", i))
 		err := validateStreamKey(test.id, test.lastId)
-		log.Printf("err=%v", err)
+		Log(fmt.Sprintf("err=%v", err))
 		expect := test.expected
 		if expect == "" {
 			if err != nil {
