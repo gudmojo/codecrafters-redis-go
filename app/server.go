@@ -75,8 +75,9 @@ func handleConnection(conn *net.Conn) {
 				HandleAsyncRequest(conn, req)
 			} else {
 				res = HandleRequest(req)
-				Log("Writing response")
-				(*conn).Write([]byte(Serialize(res)))
+				ress := Serialize(res)
+				Log(fmt.Sprintf("Writing response %s", ress))
+				(*conn).Write([]byte(ress))
 			}	
 		}
 	}
@@ -95,7 +96,7 @@ func HandleAsyncRequest(conn *net.Conn, req *Value) {
 
 func HandleRequest(req *Value) Value {
 	cmd := req.Arr[0].Str
-	Log(fmt.Sprintf("HANDLE REQUEST: %s", cmd))
+	Log(fmt.Sprintf("HANDLE REQUEST: %s %s", cmd, Serialize(*req)))
 	switch strings.ToUpper(cmd) {
 	case "PING":
 		return pingCommand()
