@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"strconv"
@@ -15,29 +16,23 @@ func startReplica() {
 	replConf(conn, "listening-port", strconv.Itoa(config.Port))
 	replConf(conn, "capa", "psync2")
 	psync(conn, []string{"?", "-1"})
+
+	// Start responding to read requests
+	go startServer()
+
 	// Listen to updates from master
-	r := bufio.NewReader(*conn)
+	reader := NewReader(bufio.NewReader(*conn))
 	for {
 		Log("Replica waiting for update")
-		requestBytes := make([]byte, 1024)
-		b, err := r.Read(requestBytes)
-		i := 0
-		if err != nil {
-			if err.Error() == "EOF" {
-				Log("Connection to master was closed")
-				select{} // Block forever so that the replica doesn't terminate
-			}
-			Log(fmt.Sprintf("Replica failed to read update: %v", err))
-			Log(fmt.Sprintf("Bytes read: %d", b))
-			Log(fmt.Sprintf("Bytes read: %s", requestBytes[:b]))
-			select{} // Block forever so that the replica doesn't terminate
-		}
-		fmt.Println("Received update from master:", string(requestBytes[:b]))
-		for ;i<b; {
+		for {
 			var req *Value
-			i, req, err = ParseArrayOfBstringValues(requestBytes[:b], i)
+			req, err := reader.ParseArrayOfBstringValues()
 			if err != nil {
-				fmt.Println(err)
+				if err == io.EOF {
+					Log("Master closed the connection")
+					return
+				}
+				Log(fmt.Sprintf("Error while parsing request: %v", err))
 			} else {
 				Log(fmt.Sprintf("Replica received command: %v", req))
 				_ = HandleRequest(req)

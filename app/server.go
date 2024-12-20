@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"strings"
@@ -48,37 +50,24 @@ func startServer() {
 
 func handleConnection(conn *net.Conn) {
 	defer (*conn).Close()
-
+	reader := NewReader(bufio.NewReader(*conn))
 	for {
-		var res Value
-		// Read incoming data
-		requestBytes := make([]byte, 1024)
-		Log("Reading request")
-		b, err := (*conn).Read(requestBytes)
-		i := 0
+		req, err := reader.ParseArrayOfBstringValues()
 		if err != nil {
-			if err.Error() == "EOF" {
-				fmt.Printf("Client closed connection")
+			if err == io.EOF {
+				Log("Client closed connection")
 				return
 			}
-			fmt.Printf("Error in handleConnection read: %v", err)
-			return
-		}
-		for ; i<b; {
-			var req *Value
-			i, req, err = ParseArrayOfBstringValues(requestBytes[:b], i)
-			if err != nil {
-				fmt.Println(err)
-				res = Value{Typ: "error", Str: "Error parsing request"}
-				(*conn).Write([]byte(Serialize(res)))
-			} else if isAsyncRequestType(req) {
-				HandleAsyncRequest(conn, req)
-			} else {
-				res = HandleRequest(req)
-				ress := Serialize(res)
-				Log(fmt.Sprintf("Writing response %s", ress))
-				(*conn).Write([]byte(ress))
-			}	
+			Log(fmt.Sprintf("Error while parsing request: %v", err))
+			res := Value{Typ: "error", Str: "Error parsing request"}
+			(*conn).Write([]byte(Serialize(res)))
+		} else if isAsyncRequestType(req) {
+			HandleAsyncRequest(conn, req)
+		} else {
+			res := HandleRequest(req)
+			ress := Serialize(res)
+			Log(fmt.Sprintf("Writing response %s", ress))
+			(*conn).Write([]byte(ress))
 		}
 	}
 }

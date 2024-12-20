@@ -24,10 +24,10 @@ func main() {
 	config = parseArgs()
 	rdbLoadFile()
 	if config.Role == "slave" {
-		// Start responding to read requests
-		go startServer()
 		Log("Starting as a replica")
-		startReplica()
+		go startReplica()
+		// wait forever - we want replica to keep running even if connection to master was lost
+		select {}
 	} else {
 		Log("Starting as a master")
 		startServer()
