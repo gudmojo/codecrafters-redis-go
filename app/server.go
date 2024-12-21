@@ -44,13 +44,13 @@ func startServer() {
 			fmt.Println("Error accepting connection: ", err.Error())
 			os.Exit(1)
 		}
-		go handleConnection(&conn)
+		go handleConnection(conn)
 	}
 }
 
-func handleConnection(conn *net.Conn) {
-	defer (*conn).Close()
-	reader := NewReader(bufio.NewReader(*conn))
+func handleConnection(conn net.Conn) {
+	defer conn.Close()
+	reader := NewReader(bufio.NewReader(conn))
 	for {
 		req, err := reader.ParseArrayOfBstringValues()
 		if err != nil {
@@ -60,14 +60,14 @@ func handleConnection(conn *net.Conn) {
 			}
 			Log(fmt.Sprintf("Error while parsing request: %v", err))
 			res := Value{Typ: "error", Str: "Error parsing request"}
-			(*conn).Write([]byte(Serialize(res)))
+			conn.Write([]byte(Serialize(res)))
 		} else if isAsyncRequestType(req) {
 			HandleAsyncRequest(conn, req)
 		} else {
 			res := HandleRequest(req)
 			ress := Serialize(res)
 			Log(fmt.Sprintf("Writing response %s", ress))
-			(*conn).Write([]byte(ress))
+			conn.Write([]byte(ress))
 		}
 	}
 }
@@ -76,7 +76,7 @@ func isAsyncRequestType(req *Value) bool {
 	return strings.ToUpper(req.Arr[0].Str) == "PSYNC"
 }
 
-func HandleAsyncRequest(conn *net.Conn, req *Value) {
+func HandleAsyncRequest(conn net.Conn, req *Value) {
 	switch strings.ToUpper(req.Arr[0].Str) {
 	case "PSYNC":
 		psyncCommand(conn, req)

@@ -34,7 +34,7 @@ func replconfCommand(req *Value) Value {
 	return Value{Typ: "string", Str: "OK"}
 }
 
-func psyncCommand(conn *net.Conn, req *Value) {
+func psyncCommand(conn net.Conn, req *Value) {
 	args := req.Arr
 	if len(args) < 3 {
 		panic("PSYNC requires at least 2 arguments")
@@ -44,11 +44,11 @@ func psyncCommand(conn *net.Conn, req *Value) {
 	Log(fmt.Sprintf("PSYNC: %s %s", replId, offset))
 	bytes, _ := base64.StdEncoding.DecodeString("UkVESVMwMDEx+glyZWRpcy12ZXIFNy4yLjD6CnJlZGlzLWJpdHPAQPoFY3RpbWXCbQi8ZfoIdXNlZC1tZW3CsMQQAPoIYW9mLWJhc2XAAP/wbjv+wP9aog==")
 	res := Value{
-		Typ: "psync", 
-		PsyncHeader: &Value{Typ: "string", Str: fmt.Sprintf("FULLRESYNC %s 0", master_replid)}, 
-		PsyncData: &Value{Typ: "bytes", Bytes: bytes},
+		Typ:         "psync",
+		PsyncHeader: &Value{Typ: "string", Str: fmt.Sprintf("FULLRESYNC %s 0", master_replid)},
+		PsyncData:   &Value{Typ: "bytes", Bytes: bytes},
 	}
-	(*conn).Write([]byte(Serialize(res)))
+	conn.Write([]byte(Serialize(res)))
 	c := make(chan Value, 10000)
 	Log("Adding replica to GlobalReplicas")
 	GlobalReplicas = append(GlobalReplicas, c)
@@ -57,7 +57,7 @@ func psyncCommand(conn *net.Conn, req *Value) {
 	// Read the command from a channel and send it to the replica
 	for {
 		cmd := <-c
-		(*conn).Write([]byte(Serialize(cmd)))
+		conn.Write([]byte(Serialize(cmd)))
 	}
 }
 
