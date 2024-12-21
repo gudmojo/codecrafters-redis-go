@@ -29,7 +29,7 @@ func replconfCommand(req *Value) Value {
 	case "CAPA":
 		Log(fmt.Sprintf("replsync capa: %s", args[2].Str))
 	case "GETACK":
-		return Value{Typ: "array", Arr: []Value{{Typ: "bstring", Str: "REPLCONF"}, {Typ: "bstring", Str: "ACK"}, {Typ: "bstring", Str: "0"}}}
+		return Value{Typ: "array", Arr: []Value{{Typ: "bstring", Str: "REPLCONF"}, {Typ: "bstring", Str: "ACK"}, {Typ: "bstring", Str: strconv.Itoa(ThisReplicaOffset)}}}
 	}
 	return Value{Typ: "string", Str: "OK"}
 }

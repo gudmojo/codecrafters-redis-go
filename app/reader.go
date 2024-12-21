@@ -9,6 +9,8 @@ import (
 	"unicode"
 )
 
+var ThisReplicaOffset = 0
+
 type Reader struct {
 	reader *bufio.Reader
 }
@@ -17,24 +19,24 @@ func NewReader(reader *bufio.Reader) *Reader {
 	return &Reader{reader: reader}
 }
 
-func (r *Reader) LineBytes() ([]byte, error) {
+func (r *Reader) LineBytes() (int, []byte, error) {
 	line, err := r.reader.ReadBytes('\n')
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
-	return line[:len(line)-2], nil
+	return len(line), line[:len(line)-2], nil
 }
 
-func (r *Reader) LineString() (string, error) {
+func (r *Reader) LineString() (int, string, error) {
 	line, err := r.reader.ReadString('\n')
 	if err != nil {
-		return "", err
+		return 0, "", err
 	}
-	return line[:len(line)-2], nil
+	return len(line), line[:len(line)-2], nil
 }
 
 func (r *Reader) ReadRdb() ([]byte, error) {
-	buf, err := r.LineBytes()
+	_, buf, err := r.LineBytes()
 	if err != nil {
 		Log(fmt.Sprintf("Error reading line: %v", err))
 		return nil, err
@@ -48,6 +50,7 @@ func (r *Reader) ReadRdb() ([]byte, error) {
 	Log(fmt.Sprintf("bulkLen: %d", bulkLen))
 	rdb := make([]byte, bulkLen)
 	_, err = io.ReadFull(r.reader, rdb)
+
 	if err != nil {
 		Log(fmt.Sprintf("Error reading rdb: %v", err))
 		return nil, err
@@ -55,47 +58,49 @@ func (r *Reader) ReadRdb() ([]byte, error) {
 	return rdb, nil
 }
 
-func (r *Reader) ParseArrayOfBstringValues() (*Value, error) {
-	arrayLine, err := r.LineString() // Read *<number of arguments>\r\n
+func (r *Reader) ParseArrayOfBstringValues() (int, *Value, error) {
+	n, arrayLine, err := r.LineString() // Read *<number of arguments>\r\n
 	if err != nil {
 		if err == io.EOF {
-			return nil, err
+			return 0, nil, err
 		}
 		Log(fmt.Sprintf("Error reading array line: %v", err))
-		return nil, err
+		return 0, nil, err
 	}
 	Log(fmt.Sprintf("Array line: %s %d", arrayLine, len(arrayLine)))
 	arrayLen, err := strconv.Atoi(arrayLine[1:])
 	if err != nil {
 		Log(fmt.Sprintf("Error reading array length: %v", err))
-		return nil, err
+		return 0, nil, err
 	}
 	cmd := make([]Value, arrayLen)
 	for j := 0; j < arrayLen; j++ {
-		buf, err := r.LineBytes()
+		m, buf, err := r.LineBytes()
 		if err != nil {
 			Log(fmt.Sprintf("Error reading line: %v", err))
-			return nil, err
+			return 0, nil, err
 		}
+		n += m
 		Log(fmt.Sprintf("buf: %s", buf))
 		bulkLen, err := ReadNumber(buf[1:])
 		if err != nil {
 			Log(fmt.Sprintf("Error reading bulk length: %v", err))
-			return nil, err
+			return 0, nil, err
 		}
 		Log(fmt.Sprintf("bulkLen: %d", bulkLen))
 		if bulkLen == -1 {
 			cmd[j] = Value{Typ: "bstring", Str: ""}
 		} else {
-			value, err := r.LineString()
+			m, value, err := r.LineString()
 			if err != nil {
 				Log(fmt.Sprintf("Error reading value: %v", err))
-				return nil, err
+				return 0, nil, err
 			}
+			n += m
 			cmd[j] = Value{Typ: "bstring", Str: value}
 		}
 	}
-	return &Value{Typ: "array", Arr: cmd}, nil
+	return n, &Value{Typ: "array", Arr: cmd}, nil
 }
 
 func ReadNumber(c []byte) (int, error) {

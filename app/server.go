@@ -52,7 +52,7 @@ func handleConnection(conn net.Conn) {
 	defer conn.Close()
 	reader := NewReader(bufio.NewReader(conn))
 	for {
-		req, err := reader.ParseArrayOfBstringValues()
+		n, req, err := reader.ParseArrayOfBstringValues()
 		if err != nil {
 			if err == io.EOF {
 				Log("Client closed connection")
@@ -69,6 +69,7 @@ func handleConnection(conn net.Conn) {
 			Log(fmt.Sprintf("Writing response %s", ress))
 			conn.Write([]byte(ress))
 		}
+		ThisReplicaOffset += n
 	}
 }
 

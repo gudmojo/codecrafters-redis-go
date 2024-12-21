@@ -18,13 +18,13 @@ func startReplica() {
 	replConf(conn, reader, "listening-port", strconv.Itoa(config.Port))
 	replConf(conn, reader, "capa", "psync2")
 	psync(conn, reader, []string{"?", "-1"})
-
+	ThisReplicaOffset = 0
 	// Listen to updates from master
 	for {
 		Log("Replica waiting for update")
 		for {
 			var req *Value
-			req, err := reader.ParseArrayOfBstringValues()
+			n, req, err := reader.ParseArrayOfBstringValues()
 			if err != nil {
 				if err == io.EOF {
 					Log("Master closed the connection")
@@ -40,6 +40,7 @@ func startReplica() {
 					_ = HandleRequest(req)
 				}
 			}
+			ThisReplicaOffset += n
 		}
 	}
 }
@@ -50,10 +51,11 @@ func ping(conn net.Conn, reader *Reader) {
 		log.Fatalf("Failed to write: %v", err)
 	}
 
-	reply, err := reader.LineString()
+	n, reply, err := reader.LineString()
 	if err != nil {
 		log.Fatalf("Failed to read ping response: %v", err)
 	}
+	ThisReplicaOffset += n
 	fmt.Println("Response to ping:", reply)
 }
 
@@ -63,7 +65,8 @@ func replConf(conn net.Conn, reader *Reader, key string, value string) {
 		log.Fatalf("Failed to write: %v", err)
 	}
 
-	reply, err := reader.LineString()
+	n, reply, err := reader.LineString()
+	ThisReplicaOffset += n
 	if err != nil {
 		log.Fatalf("Failed to read replconf response: %v", err)
 	}
@@ -85,10 +88,11 @@ func psync(conn net.Conn, reader *Reader, args []string) {
 	// Start responding to read requests
 	go startServer()
 
-	reply, err := reader.LineString()
+	n, reply, err := reader.LineString()
 	if err != nil {
 		log.Fatalf("Failed to read psync response: %v", err)
 	}
+	ThisReplicaOffset += n
 	fmt.Println("Replica received response to psync:", reply)
 	_, err = reader.ReadRdb()
 	if err != nil {
