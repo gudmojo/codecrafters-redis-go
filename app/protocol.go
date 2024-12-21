@@ -12,6 +12,8 @@ func Serialize(v Value) []byte {
 			return []byte("$-1\r\n")
 		}
 		return []byte(fmt.Sprintf("$%d\r\n%s\r\n", len(v.Str), v.Str))
+	case "int":
+		return []byte(fmt.Sprintf(":%d\r\n", v.Int))
 	case "string":
 		return []byte(fmt.Sprintf("+%s\r\n", v.Str))
 	case "error":

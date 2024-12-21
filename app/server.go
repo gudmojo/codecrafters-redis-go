@@ -24,6 +24,7 @@ type MapValue struct {
 
 type Value struct {
 	Typ         string
+	Int         int
 	Str         string
 	Arr         []Value
 	PsyncHeader *Value
@@ -112,6 +113,8 @@ func HandleRequest(req *Value) Value {
 		return infoCommand(req)
 	case "REPLCONF":
 		return replconfCommand(req)
+	case "WAIT":
+		return waitCommand(req)
 	}
 	return Value{Typ: "error", Str: "Unknown command"}
 }

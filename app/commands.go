@@ -174,3 +174,7 @@ func infoCommand(req *Value) Value {
 	}
 	return Value{Typ: "error", Str: "Invalid INFO command"}
 }
+
+func waitCommand(req *Value) Value {
+	return Value{Typ: "int", Int: 0}
+}
