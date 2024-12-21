@@ -33,6 +33,28 @@ func (r *Reader) LineString() (string, error) {
 	return line[:len(line)-2], nil
 }
 
+func (r *Reader) ReadRdb() ([]byte, error) {
+	buf, err := r.LineBytes()
+	if err != nil {
+		Log(fmt.Sprintf("Error reading line: %v", err))
+		return nil, err
+	}
+	Log(fmt.Sprintf("buf: %s", buf))
+	bulkLen, err := ReadNumber(buf[1:])
+	if err != nil {
+		Log(fmt.Sprintf("Error reading bulk length: %v", err))
+		return nil, err
+	}
+	Log(fmt.Sprintf("bulkLen: %d", bulkLen))
+	rdb := make([]byte, bulkLen)
+	_, err = io.ReadFull(r.reader, rdb)
+	if err != nil {
+		Log(fmt.Sprintf("Error reading rdb: %v", err))
+		return nil, err
+	}
+	return rdb, nil
+}
+
 func (r *Reader) ParseArrayOfBstringValues() (*Value, error) {
 	arrayLine, err := r.LineString() // Read *<number of arguments>\r\n
 	if err != nil {

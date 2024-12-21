@@ -3,9 +3,10 @@ package main
 import (
 	"encoding/base64"
 	"fmt"
-	"strconv"
-	"time"
 	"net"
+	"strconv"
+	"strings"
+	"time"
 )
 
 func pingCommand() Value {
@@ -17,16 +18,18 @@ func replconfCommand(req *Value) Value {
 	if len(args) < 3 {
 		return Value{Typ: "error", Str: "REPLCONF requires at least 2 arguments"}
 	}
-	switch args[1].Str {
-	case "listening-port":
+	switch strings.ToUpper(args[1].Str) {
+	case "LISTENING-PORT":
 		port, err := strconv.Atoi(args[2].Str)
 		if err != nil {
 			return Value{Typ: "error", Str: "Error parsing port"}
 		}
 		Log(fmt.Sprintf("Replica listening port: %d", port))
 		// TODO: Save the port
-	case "capa":
+	case "CAPA":
 		Log(fmt.Sprintf("replsync capa: %s", args[2].Str))
+	case "GETACK":
+		return Value{Typ: "array", Arr: []Value{{Typ: "bstring", Str: "REPLCONF"}, {Typ: "bstring", Str: "ACK"}, {Typ: "bstring", Str: "0"}}}
 	}
 	return Value{Typ: "string", Str: "OK"}
 }
