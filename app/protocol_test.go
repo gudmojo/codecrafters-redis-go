@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"testing"
 )
 
@@ -36,7 +38,8 @@ func TestParse(t *testing.T) {
 	}
 
 	for j, test := range tests {
-		i, output, err := ParseArrayOfBstringValues([]byte(test.input), 0)
+		reader := NewReader(bufio.NewReader(bytes.NewReader([]byte(test.input))))
+		i, output, err := reader.ParseArrayOfBstringValues()
 		if (err != nil) != test.err {
 			t.Errorf("parse(%v) error = %v; want err = %v", j, err, test.err)
 		}

@@ -8,28 +8,24 @@ import (
 func TestReadNumber(t *testing.T) {
 	tests := []struct {
 		input     []byte
-		start     int
 		expected  int
 		expectEnd int
 		err       bool
 	}{
-		{[]byte("12345"), 0, 12345, 5, false},
-		{[]byte("6789"), 0, 6789, 4, false},
-		{[]byte("abc"), 0, 0, 0, true},
-		{[]byte("123abc"), 0, 123, 3, false},
-		{[]byte(""), 0, 0, 0, true},
+		{[]byte("12345"), 12345, 5, false},
+		{[]byte("6789"), 6789, 4, false},
+		{[]byte("abc"), 0, 0, true},
+		{[]byte("123abc"), 123, 3, false},
+		{[]byte(""), 0, 0, true},
 	}
 
 	for j, test := range tests {
-		le, output, err := ReadNumber(test.input, test.start)
+		output, err := ReadNumber(test.input)
 		if (err != nil) != test.err {
 			t.Errorf("ReadNumber(%d) error = %v; want err = %v", j, err, test.err)
 		}
 		if output != test.expected {
 			t.Errorf("ReadNumber(%d) = %d; want %d", j, output, test.expected)
-		}
-		if le != test.expectEnd {
-			t.Errorf("ReadNumber(%d) = %d; want %d", j, le, test.expectEnd)
 		}
 	}
 }

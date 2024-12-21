@@ -104,6 +104,9 @@ func (r *Reader) ParseArrayOfBstringValues() (int, *Value, error) {
 func ReadNumber(c []byte) (int, error) {
 	builder := strings.Builder{}
 	i := 0
+	if len(c) == 0 {
+		return 0, fmt.Errorf("cannot read number from empty string")
+	}
 	if c[0] == '-' {
 		builder.WriteByte('-')
 		i++
