@@ -9,8 +9,6 @@ import (
 	"unicode"
 )
 
-var ThisReplicaOffset = 0
-
 type Reader struct {
 	reader *bufio.Reader
 }

@@ -50,10 +50,11 @@ func startServer() {
 }
 
 func handleConnection(conn net.Conn) {
+	offset := 0
 	defer conn.Close()
 	reader := NewReader(bufio.NewReader(conn))
 	for {
-		n, req, err := reader.ParseArrayOfBstringValues()
+		_, req, err := reader.ParseArrayOfBstringValues()
 		if err != nil {
 			if err == io.EOF {
 				Log("Client closed connection")
@@ -63,14 +64,14 @@ func handleConnection(conn net.Conn) {
 			res := Value{Typ: "error", Str: "Error parsing request"}
 			conn.Write([]byte(Serialize(res)))
 		} else if isAsyncRequestType(req) {
-			HandleAsyncRequest(conn, req)
+			HandleAsyncRequest(conn, reader, req)
 		} else {
-			res := HandleRequest(req)
+			res := HandleRequest(req, offset)
+			offset = GlobalInstanceOffset
 			ress := Serialize(res)
 			Log(fmt.Sprintf("Writing response %s", ress))
 			conn.Write([]byte(ress))
 		}
-		ThisReplicaOffset += n
 	}
 }
 
@@ -78,14 +79,14 @@ func isAsyncRequestType(req *Value) bool {
 	return strings.ToUpper(req.Arr[0].Str) == "PSYNC"
 }
 
-func HandleAsyncRequest(conn net.Conn, req *Value) {
+func HandleAsyncRequest(conn net.Conn, reader *Reader, req *Value) {
 	switch strings.ToUpper(req.Arr[0].Str) {
 	case "PSYNC":
-		psyncCommand(conn, req)
+		psyncCommand(conn, reader, req)
 	}
 }
 
-func HandleRequest(req *Value) Value {
+func HandleRequest(req *Value, offset int) Value {
 	cmd := req.Arr[0].Str
 	Log(fmt.Sprintf("HANDLE REQUEST: %s %s", cmd, Serialize(*req)))
 	switch strings.ToUpper(cmd) {
@@ -114,7 +115,7 @@ func HandleRequest(req *Value) Value {
 	case "REPLCONF":
 		return replconfCommand(req)
 	case "WAIT":
-		return waitCommand(req)
+		return waitCommand(req, offset)
 	}
 	return Value{Typ: "error", Str: "Unknown command"}
 }

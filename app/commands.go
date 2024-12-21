@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/base64"
 	"fmt"
+	"io"
 	"net"
 	"strconv"
 	"strings"
@@ -29,12 +30,12 @@ func replconfCommand(req *Value) Value {
 	case "CAPA":
 		Log(fmt.Sprintf("replsync capa: %s", args[2].Str))
 	case "GETACK":
-		return Value{Typ: "array", Arr: []Value{{Typ: "bstring", Str: "REPLCONF"}, {Typ: "bstring", Str: "ACK"}, {Typ: "bstring", Str: strconv.Itoa(ThisReplicaOffset)}}}
+		return Value{Typ: "array", Arr: []Value{{Typ: "bstring", Str: "REPLCONF"}, {Typ: "bstring", Str: "ACK"}, {Typ: "bstring", Str: strconv.Itoa(GlobalInstanceOffset)}}}
 	}
 	return Value{Typ: "string", Str: "OK"}
 }
 
-func psyncCommand(conn net.Conn, req *Value) {
+func psyncCommand(conn net.Conn, reader *Reader, req *Value) {
 	args := req.Arr
 	if len(args) < 3 {
 		panic("PSYNC requires at least 2 arguments")
@@ -49,15 +50,37 @@ func psyncCommand(conn net.Conn, req *Value) {
 		PsyncData:   &Value{Typ: "bytes", Bytes: bytes},
 	}
 	conn.Write([]byte(Serialize(res)))
-	c := make(chan Value, 10000)
+	r := NewReplica(len(GlobalReplicas), conn)
 	Log("Adding replica to GlobalReplicas")
-	GlobalReplicas = append(GlobalReplicas, c)
+	GlobalReplicas = append(GlobalReplicas, r)
 	Log("Added replica to GlobalReplicas")
+	go handleReplicaResponses(reader, r)
 	// Now that we have sent the full resync, we can start sending updates
 	// Read the command from a channel and send it to the replica
 	for {
-		cmd := <-c
-		conn.Write([]byte(Serialize(cmd)))
+		cmd := <-r.c
+		conn.Write(cmd)
+	}
+}
+
+func handleReplicaResponses(reader *Reader, r *Replica) {
+	for {
+		_, cmd, err := reader.ParseArrayOfBstringValues()
+		if err != nil {
+			if err == io.EOF {
+				Log("Replica closed the connection")
+				return
+			}
+			Log(fmt.Sprintf("Error while parsing replica response: %v", err))
+		}
+		if len(cmd.Arr) >= 3 && cmd.Arr[0].Str == "REPLCONF" && cmd.Arr[1].Str == "ACK" {
+			offset, err := strconv.Atoi(cmd.Arr[2].Str)
+			if err != nil {
+				Log(fmt.Sprintf("Error parsing offset: %v", err))
+			}
+			r.offset = offset
+			AckNotifications <- r
+		}
 	}
 }
 
@@ -65,7 +88,16 @@ func echoCommand(req *Value) Value {
 	return Value{Typ: "string", Str: req.Arr[1].Str}
 }
 
-var GlobalReplicas = make([]chan Value, 0)
+type Replica struct {
+	id int
+	c chan []byte
+	offset int
+	conn net.Conn
+}
+
+func NewReplica(id int, conn net.Conn) *Replica {
+	return &Replica{id: id, conn: conn, c: make(chan []byte, 10000), offset: 0}
+}
 
 func setCommand(req *Value) Value {
 	args := req.Arr
@@ -99,11 +131,17 @@ func setCommand(req *Value) Value {
 }
 
 func sendCommandToReplicas(req *Value) {
+	if config.Role == "slave" {
+		return
+	}
 	Log(fmt.Sprintf("Sending command to replicas, %d", len(GlobalReplicas)))
+	sreq := Serialize(*req)
+	GlobalInstanceOffset += len(sreq)
+	OpenNotifications <- struct{}{}
 	for _, replica := range GlobalReplicas {
-		Log(fmt.Sprintf("Sending command to replica"))
-		replica <- *req
-		Log(fmt.Sprintf("Sent command to replica"))
+		Log("Sending command to replica")
+		replica.c <- sreq
+		Log("Sent command to replica")
 	}
 }
 
@@ -175,6 +213,41 @@ func infoCommand(req *Value) Value {
 	return Value{Typ: "error", Str: "Invalid INFO command"}
 }
 
-func waitCommand(req *Value) Value {
-	return Value{Typ: "int", Int: len(GlobalReplicas)} // TODO: Check replicas offsets
+// In order to make the wait command work, the master needs to know the offsets of all the replicas
+func waitCommand(req *Value, offset int) Value {
+	replicationFactor, err := strconv.Atoi(req.Arr[1].Str)
+	if err != nil {
+		Log(fmt.Sprintf("Error parsing replication factor: %v", err))
+		return Value{Typ: "error", Str: "Error parsing replication factor"}
+	}
+	timeout, err := strconv.Atoi(req.Arr[2].Str)
+	if err != nil {
+		Log(fmt.Sprintf("Error parsing timeout: %v", err))
+		return Value{Typ: "error", Str: "Error parsing timeout"}
+	}
+	done := map[int]bool{}
+	for _, r := range GlobalReplicas {
+		if r.offset >= offset {
+			done[r.id] = true
+			continue
+		}
+		go func() {
+			r.conn.Write([]byte("*3\r\n$8\r\nREPLCONF\r\n$6\r\nGETACK\r\n$1\r\n*\r\n"))
+		}()
+	}
+	outer:
+	for len(done) < replicationFactor {
+		select {
+		case c := <-AckNotifications:
+			if c.offset >= offset {
+				done[c.id] = true
+				if len(done) >= replicationFactor {
+					break
+				}
+			}
+		case <-time.After(time.Duration(timeout) * time.Millisecond):
+			break outer
+		}
+	}
+	return Value{Typ: "int", Int: len(done)}
 }
