@@ -176,5 +176,5 @@ func infoCommand(req *Value) Value {
 }
 
 func waitCommand(req *Value) Value {
-	return Value{Typ: "int", Int: 0}
+	return Value{Typ: "int", Int: len(GlobalReplicas)} // TODO: Check replicas offsets
 }
