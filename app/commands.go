@@ -147,7 +147,7 @@ func incrCommand(req *Value) Value {
 		}
 		i, err = strconv.Atoi(val.Str)
 		if err != nil {
-			return Value{Typ: "error", Str: "Value is not an integer"}
+			return Value{Typ: "error", Str: "value is not an integer or out of range"}
 		}
 		i++
 	}
