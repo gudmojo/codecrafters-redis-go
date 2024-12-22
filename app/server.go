@@ -96,6 +96,8 @@ func HandleRequest(req *Value, offset int) Value {
 		return echoCommand(req)
 	case "SET":
 		return setCommand(req)
+	case "INCR":
+		return incrCommand(req)
 	case "GET":
 		return getCommand(req)
 	case "TYPE":
