@@ -156,6 +156,10 @@ func incrCommand(req *Value) Value {
 	return Value{Typ: "int", Int: i}
 }
 
+func multiCommand(req *Value) Value {
+	return Value{Typ: "string", Str: "OK"}
+}
+
 func sendCommandToReplicas(req *Value) {
 	if config.Role == "slave" {
 		return
