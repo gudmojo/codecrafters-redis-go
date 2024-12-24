@@ -156,12 +156,24 @@ func incrCommand(req *Value) Value {
 	return Value{Typ: "int", Int: i}
 }
 
-func multiCommand(req *Value) Value {
+type Session struct {
+	Transaction *Transaction
+}
+
+type Transaction struct {
+	Commands []*Value
+}
+
+func multiCommand(req *Value, session *Session) Value {
+	session.Transaction = &Transaction{}
 	return Value{Typ: "string", Str: "OK"}
 }
 
-func execCommand(req *Value) Value {
-	return Value{Typ: "error", Str: "ERR EXEC without MULTI"}
+func execCommand(req *Value, session *Session) Value {
+	if session.Transaction == nil {
+		return Value{Typ: "error", Str: "ERR EXEC without MULTI"}
+	}
+	return Value{Typ: "array", Arr: []Value{{}}}
 }
 
 func sendCommandToReplicas(req *Value) {

@@ -53,6 +53,7 @@ func handleConnection(conn net.Conn) {
 	offset := 0
 	defer conn.Close()
 	reader := NewReader(bufio.NewReader(conn))
+	session := &Session{}
 	for {
 		_, req, err := reader.ParseArrayOfBstringValues()
 		if err != nil {
@@ -66,7 +67,7 @@ func handleConnection(conn net.Conn) {
 		} else if isAsyncRequestType(req) {
 			HandleAsyncRequest(conn, reader, req)
 		} else {
-			res := HandleRequest(req, offset)
+			res := HandleRequest(req, offset, session)
 			offset = GlobalInstanceOffset
 			ress := Serialize(res)
 			Log(fmt.Sprintf("Writing response %s", ress))
@@ -86,7 +87,7 @@ func HandleAsyncRequest(conn net.Conn, reader *Reader, req *Value) {
 	}
 }
 
-func HandleRequest(req *Value, offset int) Value {
+func HandleRequest(req *Value, offset int, session *Session) Value {
 	cmd := req.Arr[0].Str
 	Log(fmt.Sprintf("HANDLE REQUEST: %s %s", cmd, Serialize(*req)))
 	switch strings.ToUpper(cmd) {
@@ -99,9 +100,9 @@ func HandleRequest(req *Value, offset int) Value {
 	case "INCR":
 		return incrCommand(req)
 	case "MULTI":
-		return multiCommand(req)
+		return multiCommand(req, session)
 	case "EXEC":
-		return execCommand(req)
+		return execCommand(req, session)
 	case "GET":
 		return getCommand(req)
 	case "TYPE":

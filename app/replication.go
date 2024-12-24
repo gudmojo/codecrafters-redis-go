@@ -19,29 +19,28 @@ func startReplica() {
 	replConf(conn, reader, "capa", "psync2")
 	psync(conn, reader, []string{"?", "-1"})
 	GlobalInstanceOffset = 0
+	session := &Session{}
 	// Listen to updates from master
 	for {
 		Log("Replica waiting for update")
-		for {
-			var req *Value
-			n, req, err := reader.ParseArrayOfBstringValues()
-			if err != nil {
-				if err == io.EOF {
-					Log("Master closed the connection")
-					return
-				}
-				Log(fmt.Sprintf("Error while parsing request: %v", err))
-			} else {
-				Log(fmt.Sprintf("Replica received command: %v", req))
-				if len(req.Arr) >= 2 && strings.ToUpper(req.Arr[0].Str) == "REPLCONF" && strings.ToUpper(req.Arr[1].Str) == "GETACK" {
-					res := HandleRequest(req, 0)
-					conn.Write([]byte(Serialize(res)))
-				} else {
-					_ = HandleRequest(req, 0)
-				}
+		var req *Value
+		n, req, err := reader.ParseArrayOfBstringValues()
+		if err != nil {
+			if err == io.EOF {
+				Log("Master closed the connection")
+				return
 			}
-			GlobalInstanceOffset += n
+			Log(fmt.Sprintf("Error while parsing request: %v", err))
+		} else {
+			Log(fmt.Sprintf("Replica received command: %v", req))
+			if len(req.Arr) >= 2 && strings.ToUpper(req.Arr[0].Str) == "REPLCONF" && strings.ToUpper(req.Arr[1].Str) == "GETACK" {
+				res := HandleRequest(req, 0, session)
+				conn.Write([]byte(Serialize(res)))
+			} else {
+				_ = HandleRequest(req, 0, session)
+			}
 		}
+		GlobalInstanceOffset += n
 	}
 }
 
