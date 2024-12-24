@@ -173,8 +173,13 @@ func execCommand(req *Value, session *Session) Value {
 	if session.Transaction == nil {
 		return Value{Typ: "error", Str: "ERR EXEC without MULTI"}
 	}
+	res := Value{Typ: "array", Arr: []Value{}}
+	for _, cmd := range session.Transaction.Commands {
+		r := HandleRequest(cmd, 0, session)
+		res.Arr = append(res.Arr, r)
+	}
 	session.Transaction = nil
-	return Value{Typ: "array", Arr: []Value{}}
+	return res
 }
 
 func sendCommandToReplicas(req *Value) {
