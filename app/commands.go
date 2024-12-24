@@ -169,6 +169,14 @@ func multiCommand(req *Value, session *Session) Value {
 	return Value{Typ: "string", Str: "OK"}
 }
 
+func discardCommand(req *Value, session *Session) Value {
+	if session.Transaction == nil {
+		return Value{Typ: "error", Str: "ERR DISCARD without MULTI"}
+	}
+	session.Transaction = nil
+	return Value{Typ: "string", Str: "OK"}
+}
+
 func execCommand(req *Value, session *Session) Value {
 	if session.Transaction == nil {
 		return Value{Typ: "error", Str: "ERR EXEC without MULTI"}
