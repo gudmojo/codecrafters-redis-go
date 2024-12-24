@@ -112,6 +112,10 @@ func HandleRequest(req *Value, offset int, session *Session) Value {
 	case "EXEC":
 		return execCommand(req, session)
 	case "GET":
+		if session.Transaction != nil {
+			session.Transaction.Commands = append(session.Transaction.Commands, req)
+			return Value{Typ: "string", Str: "QUEUED"}
+		}
 		return getCommand(req)
 	case "TYPE":
 		return typeCommand(req)
