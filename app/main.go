@@ -10,13 +10,13 @@ import (
 func main() {
 	config = parseArgs()
 	rdbLoadFile()
-	if config.Role == "slave" {
-		Log("Starting as a slave")
+	if config.Role == "replica" {
+		Log("Starting as a replica")
 		go startReplica()
-		// wait forever - we want replica to keep running even if connection to master was lost
+		// wait forever - we want replica to keep running even if connection to leader was lost
 		select {}
 	} else {
-		Log("Starting as a master")
+		Log("Starting as a leader")
 		startServer()
 	}
 }
@@ -24,7 +24,7 @@ func main() {
 func parseArgs() Config {
 	config := Config{
 		Port: 6379,
-		Role: "master",
+		Role: "leader",
 	}
 	if len(os.Args) < 2 {
 		return config
@@ -51,17 +51,17 @@ func parseArgs() Config {
 			}
 		}
 		if os.Args[i] == "--replicaof" {
-			config.Role = "slave"
+			config.Role = "replica"
 			s := strings.Split(os.Args[i+1], " ")
-			config.ReplicationMaster = s[0]
+			config.ReplicationLeader = s[0]
 			if i+1 < len(os.Args) {
 				port, err := strconv.Atoi(s[1])
 				if err != nil {
-					Log(fmt.Sprintf("Error parsing master port: %v", err))
+					Log(fmt.Sprintf("Error parsing leader port: %v", err))
 				}
 				config.ReplicationPort = port
 			}
-			Log(fmt.Sprintf("Replicating from %s:%d", config.ReplicationMaster, config.ReplicationPort))
+			Log(fmt.Sprintf("Replicating from %s:%d", config.ReplicationLeader, config.ReplicationPort))
 		}
 	}
 	return config

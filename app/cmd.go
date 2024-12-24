@@ -26,18 +26,6 @@ func discardCommand(req *Value, session *Session) Value {
 	return Value{Typ: "string", Str: "OK"}
 }
 
-func sendCommandToReplicas(req *Value) {
-	if config.Role == "slave" {
-		return
-	}
-	sreq := Serialize(*req)
-	GlobalInstanceOffset += len(sreq)
-	OpenNotifications <- struct{}{}
-	for _, replica := range GlobalReplicas {
-		replica.c <- sreq
-	}
-}
-
 func getCommand(req *Value) Value {
 	key := req.Arr[1].Str
 	value, ok := GlobalMap[key]
@@ -101,7 +89,11 @@ func infoCommand(req *Value) Value {
 		return Value{Typ: "error", Str: "INFO requires at least 1 argument"}
 	}
 	if args[1].Str == "replication" {
-		return Value{Typ: "bstring", Str: fmt.Sprintf("role:%s\nmaster_replid:%s\nmaster_repl_offset:%d\n", config.Role, master_replid, GlobalInstanceOffset)}
+		role := "master"
+		if config.Role == "replica" {
+			role = "slave"
+		}
+		return Value{Typ: "bstring", Str: fmt.Sprintf("role:%s\nmaster_replid:%s\nmaster_repl_offset:%d\n", role, LeaderID, GlobalInstanceOffset)}
 	}
 	return Value{Typ: "error", Str: "Invalid INFO command"}
 }

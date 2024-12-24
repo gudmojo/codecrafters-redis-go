@@ -4,8 +4,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net"
-	"strconv"
-	"io"
 )
 
 func psyncCommand(conn net.Conn, reader *Reader, req *Value) {
@@ -19,7 +17,7 @@ func psyncCommand(conn net.Conn, reader *Reader, req *Value) {
 	bytes, _ := base64.StdEncoding.DecodeString("UkVESVMwMDEx+glyZWRpcy12ZXIFNy4yLjD6CnJlZGlzLWJpdHPAQPoFY3RpbWXCbQi8ZfoIdXNlZC1tZW3CsMQQAPoIYW9mLWJhc2XAAP/wbjv+wP9aog==")
 	res := Value{
 		Typ:         "psync",
-		PsyncHeader: &Value{Typ: "string", Str: fmt.Sprintf("FULLRESYNC %s 0", master_replid)},
+		PsyncHeader: &Value{Typ: "string", Str: fmt.Sprintf("FULLRESYNC %s 0", LeaderID)},
 		PsyncData:   &Value{Typ: "bytes", Bytes: bytes},
 	}
 	conn.Write([]byte(Serialize(res)))
@@ -33,26 +31,5 @@ func psyncCommand(conn net.Conn, reader *Reader, req *Value) {
 	for {
 		cmd := <-r.c
 		conn.Write(cmd)
-	}
-}
-
-func handleReplicaResponses(reader *Reader, r *Replica) {
-	for {
-		_, cmd, err := reader.ParseArrayOfBstringValues()
-		if err != nil {
-			if err == io.EOF {
-				Log("Replica closed the connection")
-				return
-			}
-			Log(fmt.Sprintf("Error while parsing replica response: %v", err))
-		}
-		if len(cmd.Arr) >= 3 && cmd.Arr[0].Str == "REPLCONF" && cmd.Arr[1].Str == "ACK" {
-			offset, err := strconv.Atoi(cmd.Arr[2].Str)
-			if err != nil {
-				Log(fmt.Sprintf("Error parsing offset: %v", err))
-			}
-			r.offset = offset
-			AckNotifications <- r
-		}
 	}
 }

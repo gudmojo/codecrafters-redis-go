@@ -11,7 +11,7 @@ import (
 )
 
 func startReplica() {
-	conn := connectToMaster()
+	conn := connectToLeader()
 	defer conn.Close()
 	reader := NewReader(bufio.NewReader(conn))
 	ping(conn, reader)
@@ -20,13 +20,13 @@ func startReplica() {
 	psync(conn, reader, []string{"?", "-1"})
 	GlobalInstanceOffset = 0
 	session := &Session{}
-	// Listen to updates from master
+	// Listen to updates from leader
 	for {
 		var req *Value
 		n, req, err := reader.ParseArrayOfBstringValues()
 		if err != nil {
 			if err == io.EOF {
-				Log("Master closed the connection")
+				Log("Leader closed the connection")
 				return
 			}
 			Log(fmt.Sprintf("Error while parsing request: %v", err))
@@ -95,8 +95,8 @@ func psync(conn net.Conn, reader *Reader, args []string) {
 	}
 }
 
-func connectToMaster() net.Conn {
-	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", config.ReplicationMaster, config.ReplicationPort))
+func connectToLeader() net.Conn {
+	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", config.ReplicationLeader, config.ReplicationPort))
 	if err != nil {
 		log.Fatalf("Failed to connect: %v", err)
 	}
