@@ -96,8 +96,16 @@ func HandleRequest(req *Value, offset int, session *Session) Value {
 	case "ECHO":
 		return echoCommand(req)
 	case "SET":
+		if session.Transaction != nil {
+			session.Transaction.Commands = append(session.Transaction.Commands, req)
+			return Value{Typ: "string", Str: "QUEUED"}
+		}
 		return setCommand(req)
 	case "INCR":
+		if session.Transaction != nil {
+			session.Transaction.Commands = append(session.Transaction.Commands, req)
+			return Value{Typ: "string", Str: "QUEUED"}
+		}
 		return incrCommand(req)
 	case "MULTI":
 		return multiCommand(req, session)
