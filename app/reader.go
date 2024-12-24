@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"strconv"
-	"strings"
 	"unicode"
 )
 
@@ -97,24 +96,21 @@ func (r *Reader) ParseArrayOfBstringValues() (int, *Value, error) {
 }
 
 func ReadNumber(c []byte) (int, error) {
-	builder := strings.Builder{}
-	i := 0
 	if len(c) == 0 {
 		return 0, fmt.Errorf("cannot read number from empty string")
 	}
+	sign := 1
+	i := 0
 	if c[0] == '-' {
-		builder.WriteByte('-')
+		sign = -1
 		i++
 	}
+	num := 0
 	for ; i < len(c); i++ {
 		if !unicode.IsDigit(rune(c[i])) {
 			break
 		}
-		builder.WriteByte(c[i])
+		num = num*10 + int(c[i]-'0')
 	}
-	x, err := strconv.Atoi(builder.String())
-	if err != nil {
-		return 0, err
-	}
-	return x, nil
+	return sign * num, nil
 }
