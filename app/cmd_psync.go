@@ -22,9 +22,7 @@ func psyncCommand(conn net.Conn, reader *Reader, req *Value) {
 	}
 	conn.Write([]byte(Serialize(res)))
 	r := NewReplica(len(GlobalReplicas), conn)
-	Log("Adding replica to GlobalReplicas")
 	GlobalReplicas = append(GlobalReplicas, r)
-	Log("Added replica to GlobalReplicas")
 	go handleReplicaResponses(reader, r)
 	// Now that we have sent the full resync, we can start sending updates
 	// Read the command from a channel and send it to the replica

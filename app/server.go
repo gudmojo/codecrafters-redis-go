@@ -9,6 +9,12 @@ import (
 	"strings"
 )
 
+// Track offset for replication status
+var GlobalInstanceOffset = 0
+
+// The in-memory datastore
+var GlobalMap = make(map[string]*MapValue)
+
 func startServer() {
 	l, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", config.Port))
 	if err != nil {

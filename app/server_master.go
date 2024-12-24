@@ -6,6 +6,14 @@ import (
 	"strconv"
 )
 
+var LeaderID = "8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
+
+// Acks from replicas after leader sent getAck
+var AckNotifications = make(chan *Replica, 10000)
+
+// Master keeps a list of replicas
+var GlobalReplicas = make([]*Replica, 0)
+
 // Leader's handler for responses from replicas
 func handleReplicaResponses(reader *Reader, r *Replica) {
 	for {
@@ -34,7 +42,6 @@ func sendCommandToReplicas(req *Value) {
 	}
 	sreq := Serialize(*req)
 	GlobalInstanceOffset += len(sreq)
-	OpenNotifications <- struct{}{}
 	for _, replica := range GlobalReplicas {
 		replica.c <- sreq
 	}
