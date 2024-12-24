@@ -1,103 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"math"
 	"strconv"
 	"time"
 )
-
-func xadd(req *Value) Value {
-	args := req.Arr
-	var err error
-	if len(args) < 3 {
-		return Value{Typ: "error", Str: "XADD requires at least 2 arguments"}
-	}
-	if len(args) % 2 != 1 {
-		return Value{Typ: "error", Str: "XADD requires an even number of arguments"}
-	}
-	streamKey := args[1].Str
-	stream, found := GlobalMap[streamKey]
-	if !found {
-		stream = &MapValue{Typ: "stream", Chans: []chan struct{}{}, Stream: []StreamValue{}}
-		GlobalMap[streamKey] = stream
-	}
-	idStr := args[2].Str
-	var idPre StreamIdPre
-	if idStr == "*" {
-		idPre = StreamIdPre{StreamId: StreamId{int(time.Now().UnixMilli()), 0}, typ: 1}
-	} else {
-		idPre, err = parseStreamId(idStr)
-		if err != nil {
-			return Value{Typ: "error", Str: "Invalid stream id"}
-		}	
-	}
-	id := idPre.StreamId
-	if idPre.typ == 1 {
-		if stream.LastId.id0 == idPre.id0 {
-		id.id1 = stream.LastId.id1 + 1
-		} else {
-			id.id1 = 0
-		}
-	}
-	err = validateStreamKey(id, stream.LastId)
-	if err != nil {
-		return Value{Typ: "error", Str: err.Error()}
-	}
-	map0 := make(map[string]string)
-	for i := 3; i < len(args); i += 2 {
-		map0[args[i].Str] = args[i+1].Str
-	}
-	stream.Stream = append(stream.Stream, StreamValue{id: id, map0: map0})
-	stream.LastId = id
-	for _, r := range(stream.Chans) {
-		r <- struct{}{}
-	}
-	return Value{Typ: "bstring", Str: id.String()}
-}
-
-func xrange(req *Value) Value {
-	var err error
-	args := req.Arr
-	var res Value = Value{Typ: "array", Arr: []Value{}}
-	if len(args) < 4 {
-		return Value{Typ: "error", Str: "XRANGE requires 3 arguments"}
-	}
-	streamKey := args[1].Str
-	start := args[2].Str
-	end := args[3].Str
-	stream, found := GlobalMap[streamKey]
-	if !found {
-		return Value{Typ: "bstring", Str: ""}
-	}
-	if start == "-" {
-		start = "0-0"
-	}
-	startId, err := parseStreamId(start)
-	if err != nil {
-		return Value{Typ: "error", Str: "Invalid start id"}
-	}
-	if end == "+" {
-		end = fmt.Sprintf("%d-%d", math.MaxInt, math.MaxInt)
-	}
-	endId, err := parseStreamId(end)
-	if err != nil {
-		return Value{Typ: "error", Str: "Invalid end id"}
-	}
-	for _, s := range stream.Stream {
-		// If s >= start and s <= end
-		if !lessThan(s.id, startId.StreamId) && !greaterThan(s.id, endId.StreamId) {
-			d := Value{Typ: "array", Arr: []Value{}}
-			for k, v := range s.map0 {
-				d.Arr = append(d.Arr, Value{Typ: "bstring", Str: k})
-				d.Arr = append(d.Arr, Value{Typ: "bstring", Str: v})
-			}
-			kk := Value{Typ: "array", Arr: []Value{{Typ: "bstring", Str: s.id.String()}, d}}
-			res.Arr = append(res.Arr, kk)
-		}
-	}
-	return res
-}
 
 func xread(req *Value) Value {
 	var err error
