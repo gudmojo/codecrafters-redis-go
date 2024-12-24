@@ -264,7 +264,7 @@ func infoCommand(req *Value) Value {
 		return Value{Typ: "error", Str: "INFO requires at least 1 argument"}
 	}
 	if args[1].Str == "replication" {
-		return Value{Typ: "bstring", Str: fmt.Sprintf("role:%s\nmaster_replid:%s\nmaster_repl_offset:%d\n", config.Role, master_replid, master_repl_offset)}
+		return Value{Typ: "bstring", Str: fmt.Sprintf("role:%s\nmaster_replid:%s\nmaster_repl_offset:%d\n", config.Role, master_replid, GlobalInstanceOffset)}
 	}
 	return Value{Typ: "error", Str: "Invalid INFO command"}
 }

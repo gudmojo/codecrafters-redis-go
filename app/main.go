@@ -7,23 +7,6 @@ import (
 	"strings"
 )
 
-var config Config
-var master_replid = "8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
-var master_repl_offset = 0
-var AckNotifications = make(chan *Replica, 10000)
-var OpenNotifications = make(chan struct{}, 10000)
-var GlobalReplicas = make([]*Replica, 0)
-var GlobalInstanceOffset = 0
-
-type Config struct {
-	Dir string
-	DbFilename string
-	Port int
-	Role string
-	ReplicationMaster string
-	ReplicationPort int
-}
-
 func main() {
 	config = parseArgs()
 	rdbLoadFile()

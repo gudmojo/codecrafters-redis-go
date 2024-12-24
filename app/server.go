@@ -7,30 +7,7 @@ import (
 	"net"
 	"os"
 	"strings"
-	"time"
 )
-
-// The in-memory datastore
-var GlobalMap = make(map[string]*MapValue)
-
-type MapValue struct {
-	Typ    string
-	Exp    time.Time
-	Str    string
-	Stream []StreamValue
-	LastId StreamId
-	Chans  []chan struct{}
-}
-
-type Value struct {
-	Typ         string
-	Int         int
-	Str         string
-	Arr         []Value
-	PsyncHeader *Value
-	PsyncData   *Value
-	Bytes       []byte
-}
 
 func startServer() {
 	l, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", config.Port))
