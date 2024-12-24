@@ -100,6 +100,8 @@ func HandleRequest(req *Value, offset int) Value {
 		return incrCommand(req)
 	case "MULTI":
 		return multiCommand(req)
+	case "EXEC":
+		return execCommand(req)
 	case "GET":
 		return getCommand(req)
 	case "TYPE":

@@ -160,6 +160,10 @@ func multiCommand(req *Value) Value {
 	return Value{Typ: "string", Str: "OK"}
 }
 
+func execCommand(req *Value) Value {
+	return Value{Typ: "error", Str: "ERR EXEC without MULTI"}
+}
+
 func sendCommandToReplicas(req *Value) {
 	if config.Role == "slave" {
 		return
