@@ -109,6 +109,8 @@ func HandleRequest(req *Value, offset int, session *Session) Value {
 		return incrCommand(req)
 	case "MULTI":
 		return multiCommand(req, session)
+	case "DISCARD":
+		return discardCommand(req, session)
 	case "EXEC":
 		return execCommand(req, session)
 	case "GET":
