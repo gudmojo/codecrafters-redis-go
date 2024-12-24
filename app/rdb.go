@@ -34,7 +34,7 @@ func rdbLoadFile() {
 	defer file.Close()
 	bytes, err := io.ReadAll(file)
 	if err != nil {
-		fmt.Println("Error reading file:", err)
+		Log(fmt.Sprintf("Error reading file: %v", err))
 		return
 	}
 	parseRDB(bytes)

@@ -62,10 +62,8 @@ func TestValidateStreamKey(t *testing.T) {
 		},
 	}
 
-	for i, test := range tests {
-		Log(fmt.Sprintf("i=%d", i))
+	for _, test := range tests {
 		err := validateStreamKey(test.id, test.lastId)
-		Log(fmt.Sprintf("err=%v", err))
 		expect := test.expected
 		if expect == "" {
 			if err != nil {

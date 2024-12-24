@@ -22,7 +22,6 @@ func startReplica() {
 	session := &Session{}
 	// Listen to updates from master
 	for {
-		Log("Replica waiting for update")
 		var req *Value
 		n, req, err := reader.ParseArrayOfBstringValues()
 		if err != nil {
@@ -32,7 +31,6 @@ func startReplica() {
 			}
 			Log(fmt.Sprintf("Error while parsing request: %v", err))
 		} else {
-			Log(fmt.Sprintf("Replica received command: %v", req))
 			if len(req.Arr) >= 2 && strings.ToUpper(req.Arr[0].Str) == "REPLCONF" && strings.ToUpper(req.Arr[1].Str) == "GETACK" {
 				res := HandleRequest(req, 0, session)
 				conn.Write([]byte(Serialize(res)))
@@ -50,12 +48,11 @@ func ping(conn net.Conn, reader *Reader) {
 		log.Fatalf("Failed to write: %v", err)
 	}
 
-	n, reply, err := reader.LineString()
+	n, _, err := reader.LineString()
 	if err != nil {
 		log.Fatalf("Failed to read ping response: %v", err)
 	}
 	GlobalInstanceOffset += n
-	fmt.Println("Response to ping:", reply)
 }
 
 func replConf(conn net.Conn, reader *Reader, key string, value string) {
@@ -79,7 +76,6 @@ func psync(conn net.Conn, reader *Reader, args []string) {
 		a = append(a, Value{Typ: "bstring", Str: arg})
 	}
 	ser := Serialize(Value{Typ: "array", Arr: a})
-	Log("Replica Sending PSYNC")
 	_, err := conn.Write([]byte(ser))
 	if err != nil {
 		log.Fatalf("Failed to write: %v", err)

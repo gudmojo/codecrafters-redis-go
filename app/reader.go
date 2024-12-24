@@ -39,13 +39,11 @@ func (r *Reader) ReadRdb() ([]byte, error) {
 		Log(fmt.Sprintf("Error reading line: %v", err))
 		return nil, err
 	}
-	Log(fmt.Sprintf("buf: %s", buf))
 	bulkLen, err := ReadNumber(buf[1:])
 	if err != nil {
 		Log(fmt.Sprintf("Error reading bulk length: %v", err))
 		return nil, err
 	}
-	Log(fmt.Sprintf("bulkLen: %d", bulkLen))
 	rdb := make([]byte, bulkLen)
 	_, err = io.ReadFull(r.reader, rdb)
 
@@ -65,7 +63,6 @@ func (r *Reader) ParseArrayOfBstringValues() (int, *Value, error) {
 		Log(fmt.Sprintf("Error reading array line: %v", err))
 		return 0, nil, err
 	}
-	Log(fmt.Sprintf("Array line: %s %d", arrayLine, len(arrayLine)))
 	arrayLen, err := strconv.Atoi(arrayLine[1:])
 	if err != nil {
 		Log(fmt.Sprintf("Error reading array length: %v", err))
@@ -79,13 +76,11 @@ func (r *Reader) ParseArrayOfBstringValues() (int, *Value, error) {
 			return 0, nil, err
 		}
 		n += m
-		Log(fmt.Sprintf("buf: %s", buf))
 		bulkLen, err := ReadNumber(buf[1:])
 		if err != nil {
 			Log(fmt.Sprintf("Error reading bulk length: %v", err))
 			return 0, nil, err
 		}
-		Log(fmt.Sprintf("bulkLen: %d", bulkLen))
 		if bulkLen == -1 {
 			cmd[j] = Value{Typ: "bstring", Str: ""}
 		} else {

@@ -35,14 +35,14 @@ type Value struct {
 func startServer() {
 	l, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", config.Port))
 	if err != nil {
-		fmt.Println("Failed to bind to port 6379")
+		Log(fmt.Sprintf("Failed to bind to port %d", config.Port))
 		os.Exit(1)
 	}
 	Log(fmt.Sprintf("Server started on port %d", config.Port))
 	for {
 		conn, err := l.Accept()
 		if err != nil {
-			fmt.Println("Error accepting connection: ", err.Error())
+			Log(fmt.Sprintf("Error accepting connection: %v", err))
 			os.Exit(1)
 		}
 		go handleConnection(conn)
@@ -58,7 +58,6 @@ func handleConnection(conn net.Conn) {
 		_, req, err := reader.ParseArrayOfBstringValues()
 		if err != nil {
 			if err == io.EOF {
-				Log("Client closed connection")
 				return
 			}
 			Log(fmt.Sprintf("Error while parsing request: %v", err))
@@ -70,7 +69,6 @@ func handleConnection(conn net.Conn) {
 			res := HandleRequest(req, offset, session)
 			offset = GlobalInstanceOffset
 			ress := Serialize(res)
-			Log(fmt.Sprintf("Writing response %s", ress))
 			conn.Write([]byte(ress))
 		}
 	}
@@ -89,7 +87,6 @@ func HandleAsyncRequest(conn net.Conn, reader *Reader, req *Value) {
 
 func HandleRequest(req *Value, offset int, session *Session) Value {
 	cmd := req.Arr[0].Str
-	Log(fmt.Sprintf("HANDLE REQUEST: %s %s", cmd, Serialize(*req)))
 	switch strings.ToUpper(cmd) {
 	case "PING":
 		return pingCommand()

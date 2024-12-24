@@ -26,7 +26,6 @@ func replconfCommand(req *Value) Value {
 			return Value{Typ: "error", Str: "Error parsing port"}
 		}
 		Log(fmt.Sprintf("Replica listening port: %d", port))
-		// TODO: Save the port
 	case "CAPA":
 		Log(fmt.Sprintf("replsync capa: %s", args[2].Str))
 	case "GETACK":
@@ -108,7 +107,6 @@ func setCommand(req *Value) Value {
 		key := args[1].Str
 		value := args[2].Str
 		GlobalMap[key] = &MapValue{Typ: "string", Str: value}
-		Log(fmt.Sprintf("SET key: %s, value: %s", key, value))
 		sendCommandToReplicas(req)
 		return Value{Typ: "string", Str: "OK"}
 	}
@@ -195,14 +193,11 @@ func sendCommandToReplicas(req *Value) {
 	if config.Role == "slave" {
 		return
 	}
-	Log(fmt.Sprintf("Sending command to replicas, %d", len(GlobalReplicas)))
 	sreq := Serialize(*req)
 	GlobalInstanceOffset += len(sreq)
 	OpenNotifications <- struct{}{}
 	for _, replica := range GlobalReplicas {
-		Log("Sending command to replica")
 		replica.c <- sreq
-		Log("Sent command to replica")
 	}
 }
 
