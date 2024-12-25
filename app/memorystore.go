@@ -8,6 +8,7 @@ import (
 // The in-memory datastore
 var GlobalMap = make(map[string]*MapValue)
 
+// Item in the in-memory datastore
 type MapValue struct {
 	Typ    string
 	Exp    time.Time
@@ -17,14 +18,22 @@ type MapValue struct {
 	Chans  []chan struct{}
 }
 
+// Item in a stream
 type StreamValue struct {
 	id StreamId
 	map0 map[string]string
 }
 
+// Items in a stream are identified by a 2 part id
 type StreamId struct {
 	id0 int
     id1 int
+}
+
+// StreamId that can have a wildcard for id1
+type StreamIdPre struct {
+	StreamId
+	typ int // 0 for id0-id1, 1 for id0-*
 }
 
 func (p StreamId) String() string {

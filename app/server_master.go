@@ -12,9 +12,10 @@ var LeaderID = "8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
 // Acks from replicas after leader sent getAck
 var AckNotifications = make(chan *Replica, 10000)
 
-// Master keeps a list of replicas
+// Leader keeps a list of replicas
 var GlobalReplicas = make([]*Replica, 0)
 
+// The leader keeps some information about each replica
 type Replica struct {
 	id int
 	c chan []byte

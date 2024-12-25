@@ -7,15 +7,18 @@ import (
 	"time"
 )
 
+// Field in the rdb file format
 type RdbMetadata struct {
 	attr []RdbMetadataAttribute
 }
 
+// Field in the rdb file format
 type RdbMetadataAttribute struct {
 	name  string
 	value string
 }
 
+// Field in the rdb file format
 type RdbDatabase struct {
 	index         int
 	hashTableSize uint

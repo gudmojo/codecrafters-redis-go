@@ -8,49 +8,13 @@ import (
 	"unicode"
 )
 
+// Parses the RESP protocol
 type Parser struct {
 	reader *bufio.Reader
 }
 
 func NewParser(reader *bufio.Reader) *Parser {
 	return &Parser{reader: reader}
-}
-
-func (r *Parser) LineBytes() (int, []byte, error) {
-	line, err := r.reader.ReadBytes('\n')
-	if err != nil {
-		return 0, nil, err
-	}
-	return len(line), line[:len(line)-2], nil
-}
-
-func (r *Parser) LineString() (int, string, error) {
-	line, err := r.reader.ReadString('\n')
-	if err != nil {
-		return 0, "", err
-	}
-	return len(line), line[:len(line)-2], nil
-}
-
-func (r *Parser) ReadRdb() ([]byte, error) {
-	_, buf, err := r.LineBytes()
-	if err != nil {
-		Log(fmt.Sprintf("Error reading line: %v", err))
-		return nil, err
-	}
-	bulkLen, err := ReadNumber(buf[1:])
-	if err != nil {
-		Log(fmt.Sprintf("Error reading bulk length: %v", err))
-		return nil, err
-	}
-	rdb := make([]byte, bulkLen)
-	_, err = io.ReadFull(r.reader, rdb)
-
-	if err != nil {
-		Log(fmt.Sprintf("Error reading rdb: %v", err))
-		return nil, err
-	}
-	return rdb, nil
 }
 
 func (r *Parser) ParseArrayOfBstringValues() (int, *Value, error) {
@@ -93,6 +57,43 @@ func (r *Parser) ParseArrayOfBstringValues() (int, *Value, error) {
 		}
 	}
 	return n, &Value{Typ: "array", Arr: cmd}, nil
+}
+
+func (r *Parser) ReadRdb() ([]byte, error) {
+	_, buf, err := r.LineBytes()
+	if err != nil {
+		Log(fmt.Sprintf("Error reading line: %v", err))
+		return nil, err
+	}
+	bulkLen, err := ReadNumber(buf[1:])
+	if err != nil {
+		Log(fmt.Sprintf("Error reading bulk length: %v", err))
+		return nil, err
+	}
+	rdb := make([]byte, bulkLen)
+	_, err = io.ReadFull(r.reader, rdb)
+
+	if err != nil {
+		Log(fmt.Sprintf("Error reading rdb: %v", err))
+		return nil, err
+	}
+	return rdb, nil
+}
+
+func (r *Parser) LineString() (int, string, error) {
+	line, err := r.reader.ReadString('\n')
+	if err != nil {
+		return 0, "", err
+	}
+	return len(line), line[:len(line)-2], nil
+}
+
+func (r *Parser) LineBytes() (int, []byte, error) {
+	line, err := r.reader.ReadBytes('\n')
+	if err != nil {
+		return 0, nil, err
+	}
+	return len(line), line[:len(line)-2], nil
 }
 
 func ReadNumber(c []byte) (int, error) {

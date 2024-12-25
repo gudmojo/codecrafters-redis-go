@@ -7,11 +7,6 @@ import (
 	"fmt"
 )
 
-type StreamIdPre struct {
-	StreamId
-	typ int
-}
-
 func xadd(req *Value) Value {
 	args := req.Arr
 	var err error
@@ -38,9 +33,10 @@ func xadd(req *Value) Value {
 		}	
 	}
 	id := idPre.StreamId
+	// If the id is id0-*, increment the id1 or start from 0
 	if idPre.typ == 1 {
 		if stream.LastId.id0 == idPre.id0 {
-		id.id1 = stream.LastId.id1 + 1
+			id.id1 = stream.LastId.id1 + 1
 		} else {
 			id.id1 = 0
 		}
@@ -74,6 +70,7 @@ func validateStreamKey(id StreamId, lastId StreamId) error {
 	return nil
 }
 
+// Parse a stream id in the format id0-id1 or id0-*
 func parseStreamId(id string) (StreamIdPre, error) {
 	idSplit := strings.Split(id, "-")
 	if len(idSplit) != 2 {

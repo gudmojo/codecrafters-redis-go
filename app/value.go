@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// Redis wire protocol value
 type Value struct {
 	Typ         string
 	Int         int

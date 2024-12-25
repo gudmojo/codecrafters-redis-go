@@ -1,5 +1,6 @@
 package main
 
+// Configuration of this server instance
 var config Config
 
 type Config struct {
