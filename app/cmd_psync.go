@@ -6,7 +6,7 @@ import (
 	"net"
 )
 
-func psyncCommand(conn net.Conn, reader *Reader, req *Value) {
+func psyncCommand(conn net.Conn, reader *Parser, req *Value) {
 	args := req.Arr
 	if len(args) < 3 {
 		panic("PSYNC requires at least 2 arguments")

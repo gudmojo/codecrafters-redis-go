@@ -8,15 +8,15 @@ import (
 	"unicode"
 )
 
-type Reader struct {
+type Parser struct {
 	reader *bufio.Reader
 }
 
-func NewReader(reader *bufio.Reader) *Reader {
-	return &Reader{reader: reader}
+func NewParser(reader *bufio.Reader) *Parser {
+	return &Parser{reader: reader}
 }
 
-func (r *Reader) LineBytes() (int, []byte, error) {
+func (r *Parser) LineBytes() (int, []byte, error) {
 	line, err := r.reader.ReadBytes('\n')
 	if err != nil {
 		return 0, nil, err
@@ -24,7 +24,7 @@ func (r *Reader) LineBytes() (int, []byte, error) {
 	return len(line), line[:len(line)-2], nil
 }
 
-func (r *Reader) LineString() (int, string, error) {
+func (r *Parser) LineString() (int, string, error) {
 	line, err := r.reader.ReadString('\n')
 	if err != nil {
 		return 0, "", err
@@ -32,7 +32,7 @@ func (r *Reader) LineString() (int, string, error) {
 	return len(line), line[:len(line)-2], nil
 }
 
-func (r *Reader) ReadRdb() ([]byte, error) {
+func (r *Parser) ReadRdb() ([]byte, error) {
 	_, buf, err := r.LineBytes()
 	if err != nil {
 		Log(fmt.Sprintf("Error reading line: %v", err))
@@ -53,7 +53,7 @@ func (r *Reader) ReadRdb() ([]byte, error) {
 	return rdb, nil
 }
 
-func (r *Reader) ParseArrayOfBstringValues() (int, *Value, error) {
+func (r *Parser) ParseArrayOfBstringValues() (int, *Value, error) {
 	n, arrayLine, err := r.LineString() // Read *<number of arguments>\r\n
 	if err != nil {
 		if err == io.EOF {

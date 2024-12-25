@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"net"
 	"strconv"
 )
 
@@ -14,8 +15,19 @@ var AckNotifications = make(chan *Replica, 10000)
 // Master keeps a list of replicas
 var GlobalReplicas = make([]*Replica, 0)
 
+type Replica struct {
+	id int
+	c chan []byte
+	offset int
+	conn net.Conn
+}
+
+func NewReplica(id int, conn net.Conn) *Replica {
+	return &Replica{id: id, conn: conn, c: make(chan []byte, 10000), offset: 0}
+}
+
 // Leader's handler for responses from replicas
-func handleReplicaResponses(reader *Reader, r *Replica) {
+func handleReplicaResponses(reader *Parser, r *Replica) {
 	for {
 		_, cmd, err := reader.ParseArrayOfBstringValues()
 		if err != nil {

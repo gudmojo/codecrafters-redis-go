@@ -13,7 +13,7 @@ import (
 func startReplica() {
 	conn := connectToLeader()
 	defer conn.Close()
-	reader := NewReader(bufio.NewReader(conn))
+	reader := NewParser(bufio.NewReader(conn))
 	ping(conn, reader)
 	replConf(conn, reader, "listening-port", strconv.Itoa(config.Port))
 	replConf(conn, reader, "capa", "psync2")
@@ -42,7 +42,7 @@ func startReplica() {
 	}
 }
 
-func ping(conn net.Conn, reader *Reader) {
+func ping(conn net.Conn, reader *Parser) {
 	req := Value{Typ: "array", Arr: []Value{{Typ: "bstring", Str: "PING"}}}
 	_, err := conn.Write([]byte(req.Serialize()))
 	if err != nil {
@@ -56,7 +56,7 @@ func ping(conn net.Conn, reader *Reader) {
 	GlobalInstanceOffset += n
 }
 
-func replConf(conn net.Conn, reader *Reader, key string, value string) {
+func replConf(conn net.Conn, reader *Parser, key string, value string) {
 	req := Value{Typ: "array", Arr: []Value{{Typ: "bstring", Str: "REPLCONF"}, {Typ: "bstring", Str: key}, {Typ: "bstring", Str: value}}}
 	_, err := conn.Write([]byte(req.Serialize()))
 	if err != nil {
@@ -71,7 +71,7 @@ func replConf(conn net.Conn, reader *Reader, key string, value string) {
 	fmt.Println("Response to replconf:", reply)
 }
 
-func psync(conn net.Conn, reader *Reader, args []string) {
+func psync(conn net.Conn, reader *Parser, args []string) {
 	a := make([]Value, 0, len(args)+1)
 	a = append(a, Value{Typ: "bstring", Str: "PSYNC"})
 	for _, arg := range args {

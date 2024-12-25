@@ -32,7 +32,7 @@ func startServer() {
 func handleConnection(conn net.Conn) {
 	offset := 0
 	defer conn.Close()
-	reader := NewReader(bufio.NewReader(conn))
+	reader := NewParser(bufio.NewReader(conn))
 	session := &Session{}
 	for {
 		_, req, err := reader.ParseArrayOfBstringValues()
@@ -58,7 +58,7 @@ func isAsyncRequestType(req *Value) bool {
 	return strings.ToUpper(req.Arr[0].Str) == "PSYNC"
 }
 
-func HandleAsyncRequest(conn net.Conn, reader *Reader, req *Value) {
+func HandleAsyncRequest(conn net.Conn, reader *Parser, req *Value) {
 	switch strings.ToUpper(req.Arr[0].Str) {
 	case "PSYNC":
 		psyncCommand(conn, reader, req)
