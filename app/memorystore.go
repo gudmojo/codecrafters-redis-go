@@ -31,19 +31,6 @@ func (p StreamId) String() string {
 	return fmt.Sprintf("%d-%d", p.id0, p.id1)
 }
 
-func validateStreamKey(id StreamId, lastId StreamId) error {
-	if id.id0 < 0 || id.id1 < 0 || id.id0 == 0 && id.id1 <= 0 {
-		return fmt.Errorf("ERR The ID specified in XADD must be greater than 0-0")
-	}
-	if id.id0 < lastId.id0 || id.id0 == lastId.id0 && id.id1 == lastId.id1 {
-		return fmt.Errorf("ERR The ID specified in XADD is equal or smaller than the target stream top item")
-	}
-	if id.id0 == lastId.id0 && id.id1 <= lastId.id1 {
-		return fmt.Errorf("ERR The ID specified in XADD must be greater than %d-%d", lastId.id0, lastId.id1)
-	}
-	return nil
-}
-
 func lessThan(p1, p2 StreamId) bool {
 	if p1.id0 < p2.id0 {
 		return true

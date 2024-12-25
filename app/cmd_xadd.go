@@ -61,6 +61,19 @@ func xadd(req *Value) Value {
 	return Value{Typ: "bstring", Str: id.String()}
 }
 
+func validateStreamKey(id StreamId, lastId StreamId) error {
+	if id.id0 < 0 || id.id1 < 0 || id.id0 == 0 && id.id1 <= 0 {
+		return fmt.Errorf("ERR The ID specified in XADD must be greater than 0-0")
+	}
+	if id.id0 < lastId.id0 || id.id0 == lastId.id0 && id.id1 == lastId.id1 {
+		return fmt.Errorf("ERR The ID specified in XADD is equal or smaller than the target stream top item")
+	}
+	if id.id0 == lastId.id0 && id.id1 <= lastId.id1 {
+		return fmt.Errorf("ERR The ID specified in XADD must be greater than %d-%d", lastId.id0, lastId.id1)
+	}
+	return nil
+}
+
 func parseStreamId(id string) (StreamIdPre, error) {
 	idSplit := strings.Split(id, "-")
 	if len(idSplit) != 2 {
