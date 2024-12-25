@@ -33,7 +33,7 @@ type StreamId struct {
 // StreamId that can have a wildcard for id1
 type StreamIdPre struct {
 	StreamId
-	typ int // 0 for id0-id1, 1 for id0-*
+	Id1Wildcard bool
 }
 
 func (p StreamId) String() string {

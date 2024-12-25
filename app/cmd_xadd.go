@@ -25,7 +25,8 @@ func xadd(req *Value) Value {
 	idStr := args[2].Str
 	var idPre StreamIdPre
 	if idStr == "*" {
-		idPre = StreamIdPre{StreamId: StreamId{int(time.Now().UnixMilli()), 0}, typ: 1}
+		// Generate a new id0, with id1 as wildcard
+		idPre = StreamIdPre{StreamId: StreamId{int(time.Now().UnixMilli()), 0}, Id1Wildcard: true}
 	} else {
 		idPre, err = parseStreamId(idStr)
 		if err != nil {
@@ -34,7 +35,7 @@ func xadd(req *Value) Value {
 	}
 	id := idPre.StreamId
 	// If the id is id0-*, increment the id1 or start from 0
-	if idPre.typ == 1 {
+	if idPre.Id1Wildcard {
 		if stream.LastId.id0 == idPre.id0 {
 			id.id1 = stream.LastId.id1 + 1
 		} else {
@@ -81,11 +82,11 @@ func parseStreamId(id string) (StreamIdPre, error) {
 		return StreamIdPre{}, fmt.Errorf("error parsing id0: %w", err)
 	}
 	if idSplit[1] == "*" {
-		return StreamIdPre{StreamId: StreamId{id0: id0}, typ: 1}, nil
+		return StreamIdPre{StreamId: StreamId{id0: id0}, Id1Wildcard: true}, nil
 	}
 	id1, err := strconv.Atoi(idSplit[1])
 	if err != nil {
 		return StreamIdPre{}, fmt.Errorf("error parsing id1: %w", err)
 	}
-	return StreamIdPre{StreamId: StreamId{id0: id0, id1: id1}, typ: 0}, nil
+	return StreamIdPre{StreamId: StreamId{id0: id0, id1: id1}, Id1Wildcard: false}, nil
 }
