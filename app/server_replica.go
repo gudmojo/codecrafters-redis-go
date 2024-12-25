@@ -33,7 +33,7 @@ func startReplica() {
 		} else {
 			if len(req.Arr) >= 2 && strings.ToUpper(req.Arr[0].Str) == "REPLCONF" && strings.ToUpper(req.Arr[1].Str) == "GETACK" {
 				res := HandleRequest(req, 0, session)
-				conn.Write([]byte(Serialize(res)))
+				conn.Write([]byte(res.Serialize()))
 			} else {
 				_ = HandleRequest(req, 0, session)
 			}
@@ -43,7 +43,8 @@ func startReplica() {
 }
 
 func ping(conn net.Conn, reader *Reader) {
-	_, err := conn.Write([]byte(Serialize(Value{Typ: "array", Arr: []Value{{Typ: "bstring", Str: "PING"}}})))
+	req := Value{Typ: "array", Arr: []Value{{Typ: "bstring", Str: "PING"}}}
+	_, err := conn.Write([]byte(req.Serialize()))
 	if err != nil {
 		log.Fatalf("Failed to write: %v", err)
 	}
@@ -56,7 +57,8 @@ func ping(conn net.Conn, reader *Reader) {
 }
 
 func replConf(conn net.Conn, reader *Reader, key string, value string) {
-	_, err := conn.Write([]byte(Serialize(Value{Typ: "array", Arr: []Value{{Typ: "bstring", Str: "REPLCONF"}, {Typ: "bstring", Str: key}, {Typ: "bstring", Str: value}}})))
+	req := Value{Typ: "array", Arr: []Value{{Typ: "bstring", Str: "REPLCONF"}, {Typ: "bstring", Str: key}, {Typ: "bstring", Str: value}}}
+	_, err := conn.Write([]byte(req.Serialize()))
 	if err != nil {
 		log.Fatalf("Failed to write: %v", err)
 	}
@@ -75,7 +77,7 @@ func psync(conn net.Conn, reader *Reader, args []string) {
 	for _, arg := range args {
 		a = append(a, Value{Typ: "bstring", Str: arg})
 	}
-	ser := Serialize(Value{Typ: "array", Arr: a})
+	ser := Value{Typ: "array", Arr: a}.Serialize()
 	_, err := conn.Write([]byte(ser))
 	if err != nil {
 		log.Fatalf("Failed to write: %v", err)

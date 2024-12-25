@@ -1,10 +1,22 @@
 package main
 
 import (
+	"time"
 	"fmt"
-	"strconv"
-	"strings"
 )
+
+// The in-memory datastore
+var GlobalMap = make(map[string]*MapValue)
+
+type MapValue struct {
+	Typ    string
+	Exp    time.Time
+	Str    string
+	Stream []StreamValue
+	LastId StreamId
+	Chans  []chan struct{}
+}
+
 type StreamValue struct {
 	id StreamId
 	map0 map[string]string
@@ -17,30 +29,6 @@ type StreamId struct {
 
 func (p StreamId) String() string {
 	return fmt.Sprintf("%d-%d", p.id0, p.id1)
-}
-
-type StreamIdPre struct {
-	StreamId
-	typ int
-}
-
-func parseStreamId(id string) (StreamIdPre, error) {
-	idSplit := strings.Split(id, "-")
-	if len(idSplit) != 2 {
-		return StreamIdPre{}, fmt.Errorf("invalid id format: %s", id)
-	}
-	id0, err := strconv.Atoi(idSplit[0])
-	if err != nil {
-		return StreamIdPre{}, fmt.Errorf("error parsing id0: %w", err)
-	}
-	if idSplit[1] == "*" {
-		return StreamIdPre{StreamId: StreamId{id0: id0}, typ: 1}, nil
-	}
-	id1, err := strconv.Atoi(idSplit[1])
-	if err != nil {
-		return StreamIdPre{}, fmt.Errorf("error parsing id1: %w", err)
-	}
-	return StreamIdPre{StreamId: StreamId{id0: id0, id1: id1}, typ: 0}, nil
 }
 
 func validateStreamKey(id StreamId, lastId StreamId) error {

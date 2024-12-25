@@ -12,9 +12,6 @@ import (
 // Track offset for replication status
 var GlobalInstanceOffset = 0
 
-// The in-memory datastore
-var GlobalMap = make(map[string]*MapValue)
-
 func startServer() {
 	l, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", config.Port))
 	if err != nil {
@@ -45,13 +42,13 @@ func handleConnection(conn net.Conn) {
 			}
 			Log(fmt.Sprintf("Error while parsing request: %v", err))
 			res := Value{Typ: "error", Str: "Error parsing request"}
-			conn.Write([]byte(Serialize(res)))
+			conn.Write([]byte(res.Serialize()))
 		} else if isAsyncRequestType(req) {
 			HandleAsyncRequest(conn, reader, req)
 		} else {
 			res := HandleRequest(req, offset, session)
 			offset = GlobalInstanceOffset
-			ress := Serialize(res)
+			ress := res.Serialize()
 			conn.Write([]byte(ress))
 		}
 	}

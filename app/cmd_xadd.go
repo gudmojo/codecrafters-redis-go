@@ -2,7 +2,15 @@ package main
 
 import (
 	"time"
+	"strings"
+	"strconv"
+	"fmt"
 )
+
+type StreamIdPre struct {
+	StreamId
+	typ int
+}
 
 func xadd(req *Value) Value {
 	args := req.Arr
@@ -53,3 +61,21 @@ func xadd(req *Value) Value {
 	return Value{Typ: "bstring", Str: id.String()}
 }
 
+func parseStreamId(id string) (StreamIdPre, error) {
+	idSplit := strings.Split(id, "-")
+	if len(idSplit) != 2 {
+		return StreamIdPre{}, fmt.Errorf("invalid id format: %s", id)
+	}
+	id0, err := strconv.Atoi(idSplit[0])
+	if err != nil {
+		return StreamIdPre{}, fmt.Errorf("error parsing id0: %w", err)
+	}
+	if idSplit[1] == "*" {
+		return StreamIdPre{StreamId: StreamId{id0: id0}, typ: 1}, nil
+	}
+	id1, err := strconv.Atoi(idSplit[1])
+	if err != nil {
+		return StreamIdPre{}, fmt.Errorf("error parsing id1: %w", err)
+	}
+	return StreamIdPre{StreamId: StreamId{id0: id0, id1: id1}, typ: 0}, nil
+}

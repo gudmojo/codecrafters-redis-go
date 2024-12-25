@@ -40,7 +40,7 @@ func sendCommandToReplicas(req *Value) {
 	if config.Role == "replica" {
 		return
 	}
-	sreq := Serialize(*req)
+	sreq := (*req).Serialize()
 	GlobalInstanceOffset += len(sreq)
 	for _, replica := range GlobalReplicas {
 		replica.c <- sreq

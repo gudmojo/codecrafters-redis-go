@@ -20,7 +20,7 @@ func psyncCommand(conn net.Conn, reader *Reader, req *Value) {
 		PsyncHeader: &Value{Typ: "string", Str: fmt.Sprintf("FULLRESYNC %s 0", LeaderID)},
 		PsyncData:   &Value{Typ: "bytes", Bytes: bytes},
 	}
-	conn.Write([]byte(Serialize(res)))
+	conn.Write([]byte(res.Serialize()))
 	r := NewReplica(len(GlobalReplicas), conn)
 	GlobalReplicas = append(GlobalReplicas, r)
 	go handleReplicaResponses(reader, r)

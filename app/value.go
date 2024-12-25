@@ -15,7 +15,7 @@ type Value struct {
 	Bytes       []byte
 }
 
-func Serialize(v Value) []byte {
+func (v Value) Serialize() []byte {
 	switch v.Typ {
 	case "bstring":
 		if v.Str == "" {
@@ -31,11 +31,11 @@ func Serialize(v Value) []byte {
 	case "array":
 		var builder strings.Builder
 		for _, x := range v.Arr {
-			builder.WriteString(string(Serialize(x)))
+			builder.WriteString(string(x.Serialize()))
 		}
 		return []byte(fmt.Sprintf("*%d\r\n%s", len(v.Arr), builder.String()))
 	case "psync":
-		combined := append(Serialize(*v.PsyncHeader), Serialize(*v.PsyncData)...)
+		combined := append((*v.PsyncHeader).Serialize(), (*v.PsyncData).Serialize()...)
 		return combined
 	case "bytes":
 		return append([]byte(fmt.Sprintf("$%d\r\n", len(v.Bytes))), v.Bytes...)
